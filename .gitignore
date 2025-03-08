@@ -2,6 +2,7 @@ datasource
 contents
 config.json
 memory.db
+test.py
 
 learns
 .vscode
