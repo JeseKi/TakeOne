@@ -1,6 +1,7 @@
 datasource
 contents
 config.json
+memory.db
 
 learns
 .vscode
