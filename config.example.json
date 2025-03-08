@@ -1,0 +1,6 @@
+{
+    "base_url" : "",
+    "api_key" : "",
+    "langsmith_api_key" : "",
+    "langsmith_tracing" : true
+}
