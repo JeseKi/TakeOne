@@ -1,0 +1,11 @@
+{
+    "base_url" : "",
+    "api_key" : "",
+    "casdoor_endpoint" : "",
+    "casdoor_client_id" : "",
+    "casdoor_client_secret" : "",
+    "casdoor_redirect_uri" : "",
+    "casdoor_token_endpoint" : "",
+    "casdoor_app_name" : "",
+    "casdoor_organization_name" : ""
+}
