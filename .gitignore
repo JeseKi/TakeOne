@@ -21,6 +21,8 @@ frontend/dist
 frontend/dist-ssr
 frontend/*.local
 
+casdoorConfig.tsx
+
 # Editor directories and files
 frontend/.vscode/*
 frontend/!.vscode/extensions.json
