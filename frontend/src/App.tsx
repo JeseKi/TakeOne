@@ -2,18 +2,28 @@ import { Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import './App.css'
 import { useEffect } from 'react';
 
-import BaseInformation from './BaseInfomation';
-import { casdoorConfig } from './casdoorConfig';
-import Callback from './Callback';
+import BaseInformation from './pages/BaseInfomation';
+import { config } from './config';
+import Callback from './pages/Callback';
+import { GetLoginUrl } from './Api';
 
 function App() {
-  const { loginUrl } = casdoorConfig;
+  const { backendUrl } = config;
   const navigate = useNavigate();
   const location = useLocation();
 
   useEffect(() => {
     if (location.pathname === '/login') {
-      window.location.replace(loginUrl);
+      const redirectToLogin = async () => {
+        try {
+          const loginUrlResponse = await GetLoginUrl();
+          window.location.replace(loginUrlResponse);
+        } catch (error) {
+          console.error("获取登录URL失败:", error);
+        }
+      };
+
+      redirectToLogin();
     }
 
     if (location.pathname === '/callback') {
@@ -26,7 +36,7 @@ function App() {
       navigate('/login');
     }
 
-  }, [loginUrl, navigate, location.pathname]);
+  }, [backendUrl, navigate, location.pathname]);
 
   return (
       <Routes>

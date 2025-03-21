@@ -6,6 +6,7 @@ test.py
 
 learns
 .vscode
+.continue
 
 # Logs
 frontend/logs
@@ -21,7 +22,7 @@ frontend/dist
 frontend/dist-ssr
 frontend/*.local
 
-casdoorConfig.tsx
+config.tsx
 
 # Editor directories and files
 frontend/.vscode/*

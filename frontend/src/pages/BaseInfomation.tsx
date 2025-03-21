@@ -1,6 +1,5 @@
 import { ChangeEventHandler, useState } from 'react';
 import { TextArea, GradientButton } from '@lobehub/ui';
-import './App.css';
 
 function BaseInformation() {
   const [maxLivingExpensesFromParents, setMaxLivingExpensesFromParents] = useState('');
@@ -55,7 +54,6 @@ function BaseInformation() {
   };
 
   const handleSubmit = () => {
-    // 在这里可以收集所有的状态值，然后发送到后端
     const data = {
       maxLivingExpensesFromParents,
       enoughSavingsForCollege,
@@ -69,7 +67,7 @@ function BaseInformation() {
       likesReadingExtracurricularBooks,
     };
 
-    console.log(data); // 可以在控制台查看数据
+    console.log(data);
 
     // TODO: 将数据发送到后端 API
     // fetch('/api/base_information', {
@@ -90,34 +88,34 @@ function BaseInformation() {
 
   return (
     <>
-      <h3>父母可供的大学生活费上限是多少？</h3>
+      <h3>💰️父母可供的大学生活费上限是多少？</h3>
       <TextArea value={maxLivingExpensesFromParents} onChange={handleMaxLivingExpensesFromParentsChange} />
 
-      <h3>当前积蓄是否可能不贷款供完大学四年的生活费？</h3>
+      <h3>💰️当前积蓄是否可能不贷款供完大学四年的生活费？</h3>
       <TextArea value={enoughSavingsForCollege} onChange={handleEnoughSavingsForCollegeChange} />
 
-      <h3>你平时的零花钱的用途是什么？</h3>
+      <h3>💰️你平时的零花钱的用途是什么？</h3>
       <TextArea value={pocketMoneyUsage} onChange={handlePocketMoneyUsageChange} />
 
-      <h3>假如让你再读三年高三，每年都会给你的家庭免费的十万人民币，你愿意吗？</h3>
+      <h3>💰️假如让你再读三年高三，每年都会给你的家庭免费的十万人民币，你愿意吗？</h3>
       <TextArea value={willingToRepeatHighSchoolForMoney} onChange={handleWillingToRepeatHighSchoolForMoneyChange} />
 
-      <h3>主要居住地区是几线城市？</h3>
+      <h3>🏙主要居住地区是几线城市？</h3>
       <TextArea value={cityTier} onChange={handleCityTierChange} />
 
-      <h3>父母是否属于体制内？</h3>
+      <h3>👨👩父母是否属于体制内？</h3>
       <TextArea value={parentsInPublicSector} onChange={handleParentsInPublicSectorChange} />
 
-      <h3>是否有稳定的爱好？（需要每周起码有一半的天数会每天做的，且持续时间是一年以上）</h3>
+      <h3>🤩是否有稳定的爱好？（需要每周起码有一半的天数会每天做的，且持续时间是一年以上）</h3>
       <TextArea value={hasStableHobby} onChange={handleHasStableHobbyChange} />
 
-      <h3>在高考完后的这段时间，是否有每天自主学习的习惯？</h3>
+      <h3>📚️在高考完后的这段时间，是否有每天自主学习的习惯？</h3>
       <TextArea value={selfLearningAfterGaokao} onChange={handleSelfLearningAfterGaokaoChange} />
 
-      <h3>是否主动参加过竞赛？（被推着上去推着走的不算）</h3>
+      <h3>🏁是否主动参加过竞赛？（被推着上去推着走的不算）</h3>
       <TextArea value={proactiveInCompetitions} onChange={handleProactiveInCompetitionsChange} />
 
-      <h3>平时是否喜欢阅读课外书？</h3>
+      <h3>📙平时是否喜欢阅读课外书？</h3>
       <TextArea value={likesReadingExtracurricularBooks} onChange={handleLikesReadingExtracurricularBooksChange} />
 
       <GradientButton onClick={handleSubmit} htmlType="submit">

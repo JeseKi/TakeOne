@@ -1,16 +1,37 @@
+import time
 from typing import List
 from fastapi import Depends, FastAPI
-from fastapi.responses import RedirectResponse
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+import requests
+from starlette.middleware.sessions import SessionMiddleware
+
+import secrets
+import asyncio
 from pydantic import BaseModel
 
-from jwt_utils import get_current_user, jwt_router
+from jwt_utils import get_current_user, requests_get_token
 
-from config import CASDOOR_ENDPOINT, CASDOOR_CLIENT_ID, CASDOOR_REDIRECT_URI \
-    , CASDOOR_APP_NAME, CASDOOR_ORGANIZATION_NAME
-    
+from config import CASDOOR_CLIENT_SECRET, CASDOOR_ENDPOINT, CASDOOR_CLIENT_ID, CASDOOR_REDIRECT_URI \
+    , CASDOOR_APP_NAME, CASDOOR_ORGANIZATION_NAME, CASDOOR_TOKEN_ENDPOINT, SECRET_KEY
+
+origins = [
+    "http://localhost:3000", 
+    "http://localhost:8080",
+    "https://ki-test-frontend.kispace.cc",
+]
+
+session_states = {} 
+SESSION_STATE_EXPIRATION_TIME = 600
 app = FastAPI()
-
-app.include_router(jwt_router, prefix="/api")
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],  
+)
+app.add_middleware(SessionMiddleware, secret_key=SECRET_KEY)
 
 class BaseInformation(BaseModel):
     max_living_expenses_from_parents: str  # 父母可供的大学生活费上限是多少？
@@ -41,19 +62,118 @@ class MajorChoiceResult(BaseModel):
 class SessionInfo(BaseModel):
     base_information: BaseInformation
     major_choices_result: List[MajorChoiceResult]
+    
+class CallbackRequest(BaseModel):
+    code: str
+    state: str
+    
+class TokenResponse(BaseModel):
+    access_token: str
+    refresh_token: str
+    id_token: str
+    scope: str
+    token_type: str
+    expires_in: int
+
+class UserInfoResponse(BaseModel):
+    id: str
+    name: str
+    email: str
+    email_verified_at: str
+    created_at: str
+    updated_at: str
 
 @app.get("/")
 async def root(user: dict = Depends(get_current_user)):
     return {"message": "Hello World"}
 
-@app.get("/login")
-async def login_with_casdoor():
-    # TODO： 前期测试用，后期删除，使用前端来处理登录
+@app.post("/api/login")
+async def login_with_casdoor() -> str:
+    """使用Casdoor进行登录
+
+    Returns:
+        str: Casdoor的登录链接
+    """
+    state = secrets.token_hex(16)
+    expire_time = time.time() + SESSION_STATE_EXPIRATION_TIME
+    session_states[state] = expire_time
+
     authorization_url = (
-        f"{CASDOOR_ENDPOINT}/login/oauth/authorize?client_id={CASDOOR_CLIENT_ID}"
-        f"&response_type=code&redirect_uri={CASDOOR_REDIRECT_URI}&scope=openid profile email&state=state&application={CASDOOR_APP_NAME}&org={CASDOOR_ORGANIZATION_NAME}"
+        f"{CASDOOR_ENDPOINT}/login/oauth/authorize?"
+        f"client_id={CASDOOR_CLIENT_ID}"
+        f"&response_type=code"
+        f"&redirect_uri={CASDOOR_REDIRECT_URI}"
+        f"&scope=openid profile email"
+        f"&state={state}"
+        f"&application={CASDOOR_APP_NAME}"
+        f"&org={CASDOOR_ORGANIZATION_NAME}"
     )
-    return RedirectResponse(authorization_url)
+    return authorization_url
+
+@app.post("/api/callback")
+async def casdoor_callback(callback: CallbackRequest) -> TokenResponse:
+    """获取Casdoor的token
+
+    Args:
+        code (str, optional): 授权码. Defaults to Form(...).
+        state (str, optional): 状态码. Defaults to Form(...).
+
+    Returns:
+        TokenResponse: Casdoor的token
+    """
+    code = callback.code
+    state = callback.state
+    expire_time = session_states.get(state)
+    
+    if expire_time is None:
+        return JSONResponse(content={"error": "无效的状态码，可能为 CSRF 攻击或 state 已过期"}, status_code=400)
+
+    if time.time() > expire_time:
+        del session_states[state]
+        return JSONResponse(content={"error": "状态码已过期"}, status_code=400)
+
+    token_endpoint = CASDOOR_TOKEN_ENDPOINT
+    token_params = {
+        "grant_type": "authorization_code",
+        "code": code,
+        "client_id": CASDOOR_CLIENT_ID,
+        "client_secret": CASDOOR_CLIENT_SECRET,
+    }
+    headers = {"Content-Type": "application/x-www-form-urlencoded"}
+
+    try:
+        token_data = await asyncio.to_thread(requests_get_token, token_endpoint, token_params, headers)
+        return token_data
+
+    except requests.exceptions.HTTPError as e:
+        return JSONResponse(content={"error": f"Failed to get token from Casdoor: {e}"}, status_code=400)
+    except Exception as e:
+        return JSONResponse(content={"error": f"Internal server error during token exchange: {e}"}, status_code=500)
+
+async def cleanup_expired_states():
+    # 定期清理过期的状态码
+    while True:
+        keys_to_delete = []
+        for state, expire_time in session_states.items():
+            if time.time() > expire_time:
+                keys_to_delete.append(state)
+
+        for key in keys_to_delete:
+            del session_states[key]
+
+        await asyncio.sleep(600)
+    
+@app.get("/api/user_info")
+async def user_info(user: dict = Depends(get_current_user)) -> UserInfoResponse:
+    """获取用户信息
+
+    Args:
+        user (dict, optional): JWT认证的用户信息. Defaults to Depends(get_current_user).
+
+    Returns:
+        UserInfoResponse: 用户信息
+    """
+    return user
 
 @app.post("/api/base_information")
 async def base_information(info: BaseInformation, user: dict = Depends(get_current_user)) -> str:

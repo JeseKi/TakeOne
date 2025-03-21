@@ -1,33 +1,40 @@
-from fastapi import Depends, HTTPException, status, APIRouter
+import asyncio
+from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 from jwt import PyJWKClient
+import requests
 
-from config import CASDOOR_ENDPOINT, CASDOOR_CLIENT_ID, CASDOOR_TOKEN_ENDPOINT
-
-jwt_router = APIRouter()
+from config import CASDOOR_ENDPOINT, CASDOOR_CLIENT_ID, CASDOOR_TOKEN_ENDPOINT, CASDOOR_CLIENT_SECRET, \
+    CASDOOR_ORGANIZATION_NAME, CASDOOR_APP_NAME
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl=CASDOOR_TOKEN_ENDPOINT)
 
-def get_current_user(token: str = Depends(oauth2_scheme)):
+async def get_current_user(token: str = Depends(oauth2_scheme)):
     try:
-        jwks_url = f"{CASDOOR_ENDPOINT}/.well-known/jwks"
-        jwks_client = PyJWKClient(jwks_url)
-        signing_key = jwks_client.get_signing_key_from_jwt(token)
-
-        payload = jwt.decode(
-            token,
-            signing_key.key,
-            algorithms=["RS256"],
-            audience=CASDOOR_CLIENT_ID,
-            issuer=CASDOOR_ENDPOINT,
-        )
-
-        return payload
-
-    except JWTError:
+        response = await asyncio.to_thread(requests.get, f"{CASDOOR_ENDPOINT}/api/user", 
+                                             headers={"Authorization": f"Bearer {token}"})
+        
+        response.raise_for_status()
+        return response.json()
+    except requests.exceptions.HTTPError as e:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Could not validate credentials",
             headers={"WWW-Authenticate": "Bearer"},
         )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Internal Server Error",
+        )
+
+def requests_get_token(token_endpoint, token_params, headers):
+    try:
+        response = requests.post(token_endpoint, data=token_params, headers=headers)
+        response.raise_for_status()
+        return response.json()
+    except requests.exceptions.HTTPError as e:
+        raise e
+    except Exception as e:
+        raise e

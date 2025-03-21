@@ -4,6 +4,7 @@ config = json.load(open("config.json"))
 
 BASE_URL = config["base_url"]
 API_KEY = config["api_key"]
+SECRET_KEY = config["secret_key"]
 CASDOOR_ENDPOINT = config["casdoor_endpoint"]
 CASDOOR_CLIENT_ID = config["casdoor_client_id"]
 CASDOOR_CLIENT_SECRET = config["casdoor_client_secret"]
