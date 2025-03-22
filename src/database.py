@@ -1,8 +1,14 @@
-from sqlalchemy import create_engine, Column, Integer, String, ForeignKey
+from uuid import uuid4
+from sqlalchemy import create_engine, Column, String, ForeignKey
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship
+from sqlalchemy.exc import SQLAlchemyError
+from fastapi import HTTPException
 
 from pydantic import BaseModel
+
+from logger import LogLevel, event_time_log
+from models import BaseInformationRequest
 
 DATABASE_URL = "sqlite:///./sessions.db"
 
@@ -23,7 +29,7 @@ Base = declarative_base()
 class Choice(Base):
     __tablename__ = "choices"
     uuid = Column(String, primary_key=True, index=True)
-    user_id = Column(Integer)  # UserID使用Casdoor中的
+    user_id = Column(String)  # UserID使用Casdoor中的
     session_id = Column(String, ForeignKey("sessions.uuid"))
     major_name = Column(String)
     descriptions = Column(String) # 因为要经过多轮筛选，而每一次筛选时该选项出现时的描述均不同，要和sequence一一对应。每个描述间使用`</-|-\>`分隔
@@ -34,34 +40,130 @@ class Choice(Base):
 class Session(Base):
     __tablename__ = "sessions"
     uuid = Column(String, primary_key=True, index=True)
-    user_id = Column(Integer)  # UserID使用Casdoor中的
+    user_id = Column(String)  # UserID使用Casdoor中的
     base_information = Column(String) # 基本信息的json
-    report = Column(String) # 最终生成的报告
+    report = Column(String, nullable=True) # 最终生成的报告
 
-    choices_list = relationship("Choice", back_populates="session")
+    choices_list = relationship("Choice", back_populates="session", cascade="all, delete, delete-orphan")
     
 ### 数据库更新模型
 
 class CreateSession(BaseModel):
-    user_id: int
-    base_information: str
+    user_id: str
+    base_information: BaseInformationRequest
     
 class CreateChoice(BaseModel):
-    user_id: int
+    user_id: str
     session_id: str
     major_name: str
     descriptions: str
-    chosen_sequence: str
+    chosen_sequence: int
     
 class UpdateChoice(BaseModel):
     uuid: str
     description: str
-    chosen_sequence: str
+    chosen_sequence: int
     
 class CreateReport(BaseModel):
     session_id: str
     report: str
     
+class DeleteSession(BaseModel):
+    uuid: str
+
+### CRUD
+
+def create_session(db, session: CreateSession):
+    try:
+        uuid = str(uuid4())
+        new_session = Session(uuid=uuid, user_id=session.user_id, base_information=session.base_information.model_dump_json(), report=None)
+        db.add(new_session)
+        db.commit()
+        db.refresh(new_session)
+        return new_session
+    except SQLAlchemyError as e:
+        db.rollback()
+        event_time_log(f"数据库错误:{str(e)}", LogLevel.ERROR)
+        raise HTTPException(status_code=500, detail=f"数据库错误: {str(e)}")
+    finally:
+        db.close()
+
+def create_choice(db, choice: CreateChoice):
+    try:
+        uuid = str(uuid4())
+        new_choice = Choice(uuid=uuid, 
+                          user_id=choice.user_id, 
+                          session_id=choice.session_id, 
+                          major_name=choice.major_name, 
+                          descriptions=choice.descriptions, 
+                          chosen_sequence=choice.chosen_sequence
+                          )
+        db.add(new_choice)
+        db.commit()
+        db.refresh(new_choice)
+        return new_choice
+    except SQLAlchemyError as e:
+        db.rollback()
+        event_time_log(f"数据库错误:{str(e)}", LogLevel.ERROR)
+        raise HTTPException(status_code=500, detail=f"数据库错误: {str(e)}")
+    finally:
+        db.close()
+
+def update_choice(db, new_choice: UpdateChoice):
+    try:
+        choice = db.query(Choice).filter(Choice.uuid == new_choice.uuid).first()
+        if not choice:
+            raise HTTPException(status_code=404, detail="未找到指定的选择记录")
+            
+        descriptions = choice.descriptions.split("</-|-\>")
+        descriptions.append(new_choice.description)
+        choice.descriptions = "</-|-\>".join(descriptions)
+        
+        sequence = choice.chosen_sequence.split(",")
+        sequence.append(str(new_choice.chosen_sequence))
+        choice.chosen_sequence = ",".join(sequence)
+        
+        db.commit()
+        db.refresh(choice)
+        return choice
+    except SQLAlchemyError as e:
+        db.rollback()
+        event_time_log(f"数据库错误:{str(e)}", LogLevel.ERROR)
+        raise HTTPException(status_code=500, detail=f"数据库错误: {str(e)}")
+    finally:
+        db.close()
+
+def create_report(db, report: CreateReport):
+    try:
+        session = db.query(Session).filter(Session.uuid == report.session_id).first()
+        if not session:
+            raise HTTPException(status_code=404, detail="未找到指定的会话")
+            
+        session.report = report.report
+        db.commit()
+        db.refresh(session)
+        return session
+    except SQLAlchemyError as e:
+        db.rollback()
+        event_time_log(f"数据库错误:{str(e)}", LogLevel.ERROR)
+        raise HTTPException(status_code=500, detail=f"数据库错误: {str(e)}")
+    finally:
+        db.close()
+
+def delete_session(db, session: DeleteSession):
+    try:
+        result = db.query(Session).filter(Session.uuid == session.uuid).delete()
+        if not result:
+            raise HTTPException(status_code=404, detail="未找到指定的会话")
+        db.commit()
+        return True
+    except SQLAlchemyError as e:
+        db.rollback()
+        event_time_log(f"数据库错误:{str(e)}", LogLevel.ERROR)
+        raise HTTPException(status_code=500, detail=f"数据库错误: {str(e)}")
+    finally:
+        db.close()
+
 ### 创建数据库
 
 Base.metadata.create_all(bind=engine)

@@ -1,16 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { config } from '../config'; // 假设配置文件路径不变
-import axios from 'axios';
-import { GetTokenResponse } from '../Api';
 
-interface UserInfoResponse {
-  id: string;
-  name: string;
-  displayName: string;
-  email: string;
-  preferredUsername: string;
-}
+import { GetTokenResponse , GetUserInfo} from '../Api';
 
 const Callback: React.FC = () => {
   const [searchParams] = useSearchParams();
@@ -53,28 +44,35 @@ const Callback: React.FC = () => {
       setError('未收到授权码');
       setLoading(false);
     }
-  }, [searchParams, navigate]);
+  }, [navigate]);
 
-  const verifyTokenAndFetchUserInfo = async (accessToken: string) => {
+  const verifyTokenAndFetchUserInfo = async (access_token: string) => {
     setLoading(true);
     setError(null);
     try {
-      const response = await axios.get<UserInfoResponse>(
-        `${config.backendUrl}/api/user_info`,
-        {
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-          },
-        }
-      );
+      const userInfo = await GetUserInfo(access_token);
 
-      const userInfo: UserInfoResponse = response.data;
       localStorage.setItem('userInfo', JSON.stringify(userInfo));
+
       navigate('/');
 
     } catch (error: any) {
       console.error('Token 验证或获取用户信息失败', error);
       setError(`Token 验证或获取用户信息失败: ${error.message}`);
+      
+      localStorage.removeItem('refresh_token');
+      localStorage.removeItem('access_token');
+      localStorage.removeItem('id_token');
+      localStorage.removeItem('userInfo');
+      navigate('/login');
+
+      return (
+        <div>
+          <h2>Token 验证或获取用户信息失败</h2>
+          <p>请重新登录。</p>
+          <p>正在重定向到登录页面...</p>
+        </div>
+      )
     } finally {
       setLoading(false);
     }

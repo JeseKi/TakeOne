@@ -3,16 +3,19 @@ import './App.css'
 import { useEffect } from 'react';
 
 import BaseInformation from './pages/BaseInfomation';
-import { config } from './config';
 import Callback from './pages/Callback';
-import { GetLoginUrl } from './Api';
+import { GetLoginUrl, GetUserInfo } from './Api';
 
 function App() {
-  const { backendUrl } = config;
   const navigate = useNavigate();
   const location = useLocation();
 
   useEffect(() => {
+
+    if (location.pathname === '/callback') {
+      return;
+    }
+
     if (location.pathname === '/login') {
       const redirectToLogin = async () => {
         try {
@@ -25,18 +28,40 @@ function App() {
 
       redirectToLogin();
     }
+    
+    const verifyTokenAndFetchUserInfo = async (refreshToken: string) => {
+      try {
+        await GetUserInfo(refreshToken);
+  
+      } catch (error: any) {
+        console.error('Token 验证或获取用户信息失败', error);
+        
+        localStorage.removeItem('refresh_token');
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('id_token');
+        localStorage.removeItem('userInfo');
+        navigate('/login');
+  
+        return (
+          <div>
+            <h2>Token 验证或获取用户信息失败</h2>
+            <p>请重新登录。</p>
+            <p>正在重定向到登录页面...</p>
+          </div>
+        )
+      }
+    };
 
-    if (location.pathname === '/callback') {
-      return;
-    }
+    const access_token = localStorage.getItem('access_token');
 
-    const accessToken = localStorage.getItem('refresh_token');
-
-    if (!accessToken) {
+    if (!access_token) {
       navigate('/login');
     }
+    else {
+      verifyTokenAndFetchUserInfo(access_token);
+    }
 
-  }, [backendUrl, navigate, location.pathname]);
+  }, [location.pathname]);
 
   return (
       <Routes>

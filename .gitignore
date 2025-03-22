@@ -3,6 +3,10 @@ contents
 config.json
 memory.db
 test.py
+sessions.db
+logs.log
+
+*.pyc
 
 learns
 .vscode
