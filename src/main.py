@@ -4,8 +4,9 @@ from fastapi import Depends, FastAPI
 from fastapi.concurrency import asynccontextmanager
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.sessions import SessionMiddleware
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from database import CreateSession, create_session, get_db
+from database import CreateSession, create_session, get_db, get_sessions, init_db
 from jwt_utils import cleanup_expired_states, get_current_user, jwt_router
 from config import SECRET_KEY
 from models import BaseInformationRequest, MajorChoice, SessionInfoResponse, UserInfo
@@ -18,7 +19,9 @@ origins = [
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    print("SelfKnowing启动中...")
     asyncio.create_task(cleanup_expired_states())
+    await init_db()
     print("SelfKnowing已启动")
     yield
     print("SelfKnowing关闭中...")
@@ -36,7 +39,7 @@ app.add_middleware(SessionMiddleware, secret_key=SECRET_KEY)
 app.include_router(jwt_router, prefix="/api/auth")
 
 @app.post("/api/base_information")
-async def base_information(info: BaseInformationRequest, user: UserInfo = Depends(get_current_user), db = Depends(get_db)) -> str:
+async def base_information(info: BaseInformationRequest, user: UserInfo = Depends(get_current_user), db: AsyncSession = Depends(get_db)) -> str:
     """收集这名高中生的基本信息，并创建一个新的会话
 
     Args:
@@ -48,7 +51,7 @@ async def base_information(info: BaseInformationRequest, user: UserInfo = Depend
     """
     user_id = user.id
     new_session_info = CreateSession(user_id=user_id, base_information=info)
-    new_session = create_session(db, new_session_info)
+    new_session = await create_session(db, new_session_info)
     return new_session.uuid
 
 @app.post("/api/post_options")
@@ -82,7 +85,7 @@ async def gen_options(session_id:str, choice: MajorChoice, user: UserInfo = Depe
     pass
 
 @app.get("/api/sessions")
-async def sessions_get(user: UserInfo = Depends(get_current_user)) -> List[str]:
+async def sessions_get(user: UserInfo = Depends(get_current_user), db: AsyncSession = Depends(get_db)) -> List[str]:
     """拉取这个高中生的所有的会话
 
     Args:
@@ -91,8 +94,9 @@ async def sessions_get(user: UserInfo = Depends(get_current_user)) -> List[str]:
     Returns:
         List[str]: 所有的会话id
     """
-    # TODO: 拉取用户所有的会话
-    pass
+    user_id = user.id
+    sessions_id = await get_sessions(db, user_id)
+    return sessions_id
 
 @app.get("/api/sessions/{session_id}")
 async def session_get(user: UserInfo = Depends(get_current_user)) -> SessionInfoResponse:

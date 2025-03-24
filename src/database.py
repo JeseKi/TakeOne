@@ -1,26 +1,43 @@
+from typing import List
 from uuid import uuid4
-from sqlalchemy import create_engine, Column, String, ForeignKey
+from sqlalchemy import Column, String, ForeignKey, select
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship
 from sqlalchemy.exc import SQLAlchemyError
 from fastapi import HTTPException
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 
 from pydantic import BaseModel
 
 from logger import LogLevel, event_time_log
 from models import BaseInformationRequest
 
-DATABASE_URL = "sqlite:///./sessions.db"
+DATABASE_URL = "sqlite+aiosqlite:///./sessions.db"
 
-engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+engine = create_async_engine(
+    DATABASE_URL, 
+    echo=True, 
+    pool_size=5,
+    max_overflow=10,
+    pool_timeout=30,
+    )
 
-def get_db():
-  db = SessionLocal()
-  try:
-    yield db
-  finally:
-    db.close()
+AsyncSessionLocal = sessionmaker(
+    autocommit=False,
+    autoflush=False,
+    bind=engine,
+    class_=AsyncSession,
+)
+
+async def get_db():
+    async with AsyncSessionLocal() as db:
+        try:
+            yield db
+        except Exception as e:
+            await db.rollback()
+            raise
+        finally:
+            await db.close()
 
 Base = declarative_base()
 
@@ -46,7 +63,7 @@ class Session(Base):
 
     choices_list = relationship("Choice", back_populates="session", cascade="all, delete, delete-orphan")
     
-### 数据库更新模型
+### 数据库模型
 
 class CreateSession(BaseModel):
     user_id: str
@@ -67,19 +84,29 @@ class UpdateChoice(BaseModel):
 class CreateReport(BaseModel):
     session_id: str
     report: str
-    
-class DeleteSession(BaseModel):
-    uuid: str
 
 ### CRUD
 
-def create_session(db, session: CreateSession):
+async def get_sessions(db: AsyncSession, user_id: str) -> List[str]:
+    try:
+        query = select(Session).where(Session.user_id == user_id)
+        result = await db.execute(query)
+        sessions = result.scalars().all()
+        session_id = [session.uuid for session in sessions]
+        
+        return session_id
+    except SQLAlchemyError as e:
+        db.rollback()
+        event_time_log(f"数据库错误:{str(e)}", LogLevel.ERROR)
+        raise HTTPException(status_code=500, detail=f"数据库错误: {str(e)}")
+
+async def create_session(db: AsyncSession, session: CreateSession) -> str:
     try:
         uuid = str(uuid4())
         new_session = Session(uuid=uuid, user_id=session.user_id, base_information=session.base_information.model_dump_json(), report=None)
         db.add(new_session)
-        db.commit()
-        db.refresh(new_session)
+        await db.commit()
+        await db.refresh(new_session)
         return new_session
     except SQLAlchemyError as e:
         db.rollback()
@@ -88,7 +115,7 @@ def create_session(db, session: CreateSession):
     finally:
         db.close()
 
-def create_choice(db, choice: CreateChoice):
+async def create_choice(db: AsyncSession, choice: CreateChoice):
     try:
         uuid = str(uuid4())
         new_choice = Choice(uuid=uuid, 
@@ -99,8 +126,8 @@ def create_choice(db, choice: CreateChoice):
                           chosen_sequence=choice.chosen_sequence
                           )
         db.add(new_choice)
-        db.commit()
-        db.refresh(new_choice)
+        await db.commit()
+        await db.refresh(new_choice)
         return new_choice
     except SQLAlchemyError as e:
         db.rollback()
@@ -109,22 +136,22 @@ def create_choice(db, choice: CreateChoice):
     finally:
         db.close()
 
-def update_choice(db, new_choice: UpdateChoice):
+async def update_choice(db: AsyncSession, new_choice: UpdateChoice):
     try:
         choice = db.query(Choice).filter(Choice.uuid == new_choice.uuid).first()
         if not choice:
             raise HTTPException(status_code=404, detail="未找到指定的选择记录")
             
-        descriptions = choice.descriptions.split("</-|-\>")
+        descriptions: List[str] = choice.descriptions.split("</-|-\>")
         descriptions.append(new_choice.description)
         choice.descriptions = "</-|-\>".join(descriptions)
         
-        sequence = choice.chosen_sequence.split(",")
+        sequence: List[str] = choice.chosen_sequence.split(",")
         sequence.append(str(new_choice.chosen_sequence))
         choice.chosen_sequence = ",".join(sequence)
         
-        db.commit()
-        db.refresh(choice)
+        await db.commit()
+        await db.refresh(choice)
         return choice
     except SQLAlchemyError as e:
         db.rollback()
@@ -133,15 +160,15 @@ def update_choice(db, new_choice: UpdateChoice):
     finally:
         db.close()
 
-def create_report(db, report: CreateReport):
+async def create_report(db: AsyncSession, report: CreateReport):
     try:
         session = db.query(Session).filter(Session.uuid == report.session_id).first()
         if not session:
             raise HTTPException(status_code=404, detail="未找到指定的会话")
             
         session.report = report.report
-        db.commit()
-        db.refresh(session)
+        await db.commit()
+        await db.refresh(session)
         return session
     except SQLAlchemyError as e:
         db.rollback()
@@ -150,12 +177,12 @@ def create_report(db, report: CreateReport):
     finally:
         db.close()
 
-def delete_session(db, session: DeleteSession):
+async def delete_session(db: AsyncSession, session_id: str):
     try:
-        result = db.query(Session).filter(Session.uuid == session.uuid).delete()
+        result = db.query(Session).filter(Session.uuid == session_id).delete()
         if not result:
             raise HTTPException(status_code=404, detail="未找到指定的会话")
-        db.commit()
+        await db.commit()
         return True
     except SQLAlchemyError as e:
         db.rollback()
@@ -166,4 +193,6 @@ def delete_session(db, session: DeleteSession):
 
 ### 创建数据库
 
-Base.metadata.create_all(bind=engine)
+async def init_db():
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)

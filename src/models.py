@@ -30,7 +30,7 @@ class MajorChoiceResult(BaseModel):
 
 class SessionInfoResponse(BaseModel):
     base_information: BaseInformationRequest
-    major_choices_result: List[MajorChoiceResult]
+    major_choices_result: List[MajorChoiceResult] = []
     
 class CallbackRequest(BaseModel):
     code: str
