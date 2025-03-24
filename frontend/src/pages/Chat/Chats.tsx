@@ -1,18 +1,22 @@
+import { useEffect, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { List } from '@lobehub/ui';
+
 import { SessionsList } from './SessionsList';
+import BaseInformation from '../BaseInfomation';
 
 import "./Chat.css"
-import BaseInformation from '../BaseInfomation';
-import { useEffect, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
 
 interface ChatsNavProps {
     accessToken: string;
 }
 
-export const Chat: React.FC<ChatsNavProps> = (props) => {
+const Chat: React.FC<ChatsNavProps> = (props) => {
     const { accessToken } = props;
     const [sessionId, setSessionId] = useState<string | null>(null);
     const [searchParams] = useSearchParams();
+    
+    const navigate = useNavigate();
 
     useEffect(() => {
         if (location.pathname === '/chat') {
@@ -20,9 +24,16 @@ export const Chat: React.FC<ChatsNavProps> = (props) => {
         }
     }, [searchParams]);
 
+    const handleCreateSession = () => {
+        navigate('/');
+        setSessionId(null);
+    }
+
     return (
         <div>
             <div id='chats-nav'>
+                <List.Item id='session_item' title={"创建新对话"} onClick={() => handleCreateSession()}/>
+                <hr />
                 <SessionsList accessToken={accessToken} />
             </div>
             { !sessionId &&
@@ -31,3 +42,5 @@ export const Chat: React.FC<ChatsNavProps> = (props) => {
         </div>
     )
 }
+
+export default Chat;

@@ -2,6 +2,7 @@ import { Alert, List } from '@lobehub/ui';
 import { useEffect, useState } from 'react';
 
 import { GetSessionsUUID } from '../../Api';
+import { useNavigate } from 'react-router-dom';
 
 interface SessionsListProps {
     accessToken: string;
@@ -15,9 +16,10 @@ interface SessionItem {
 export const SessionsList: React.FC<SessionsListProps> = (props) => {
     const { accessToken } = props;
     const [showAlert, setShowAlert] = useState<boolean>(false);
-
     const [sessionsId, setSessionsId] = useState<string[] | null>(null);
     const [loading, setLoading] = useState<boolean>(true);
+
+    const navigate = useNavigate(); 
 
     useEffect(() => {
         GetSessionsUUID(accessToken).then((result) => {
@@ -28,6 +30,10 @@ export const SessionsList: React.FC<SessionsListProps> = (props) => {
             setShowAlert(true);
         });
     }, [accessToken, setSessionsId]);
+
+    const handleSessionClick = (sessionId: string) => {
+        navigate(`/chat?session=${sessionId}`);
+    }
 
     if (loading) {
         return (
@@ -45,6 +51,7 @@ export const SessionsList: React.FC<SessionsListProps> = (props) => {
         description: sessionId,
         };
     });
+
     return(
         <>
             {showAlert && (
@@ -56,7 +63,7 @@ export const SessionsList: React.FC<SessionsListProps> = (props) => {
                 />
             )}
             {sessionsList.map((item, index) => (
-                    <List.Item key={index} {...item} style={{width: "90%"}}/>
+                    <List.Item key={index} {...item} id='session_item' onClick={() => handleSessionClick(item.description)}/>
             ))}
         </>
     );

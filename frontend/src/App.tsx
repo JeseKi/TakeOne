@@ -1,76 +1,64 @@
-import { Route, Routes, useLocation, useNavigate } from 'react-router-dom';
+import { Navigate, Route, Routes } from 'react-router-dom';
 import './App.css'
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 import BaseInformation from './pages/BaseInfomation';
 import Callback from './pages/Callback';
-import { GetLoginUrl, GetUserInfo } from './Api';
-import { Chat } from './pages/Chat/Chats';
+import { GetUserInfo } from './Api';
+import Chat from './pages/Chat/Chats';
+import Login from './pages/Login';
 
 function App() {
-  const navigate = useNavigate();
-  const location = useLocation();
-  const accessToken = localStorage.getItem('access_token');
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isChecking, setIsChecking] = useState(true);
+  const accessToken =localStorage.getItem('access_token') || '';
 
   useEffect(() => {
+    const checkAuth = async () => {
+      if (!accessToken) {
+        setIsAuthenticated(false);
+        setIsChecking(false);
+        return;
+      }
 
-    if (location.pathname === '/callback') {
-      return;
-    }
+      try {
+        await GetUserInfo(accessToken);
+        setIsAuthenticated(true);
+      } catch (error) {
+        console.error('Token 验证或获取用户信息失败', error);
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('userInfo');
+        setIsAuthenticated(false);
+      } finally {
+        setIsChecking(false);
+      }
+    };
 
-    if (location.pathname === '/login') {
-      const redirectToLogin = async () => {
-        try {
-          const loginUrlResponse = await GetLoginUrl();
-          window.location.replace(loginUrlResponse);
-        } catch (error) {
-          console.error("获取登录URL失败:", error);
-        }
-      };
+    checkAuth();
+  }, [accessToken]);
 
-      redirectToLogin();
-    }
-
-  }, [location.pathname, accessToken]);
-    
-  const verifyTokenAndFetchUserInfo = async (access_token: string) => {
-    try {
-      await GetUserInfo(access_token);
-
-    } catch (error: any) {
-      console.error('Token 验证或获取用户信息失败', error);
-      
-      localStorage.removeItem('access_token');
-      localStorage.removeItem('userInfo');
-      navigate('/login');
-
-      return (
-        <div>
-          <h2>Token 验证或获取用户信息失败</h2>
-          <p>请重新登录。</p>
-          <p>正在重定向到登录页面...</p>
-        </div>
-      )
-    }
-  };
-
-  if (!accessToken) {
-    navigate('/login');
-    return (<>正在重定向到登录页面...</>);
-  }
-  else {
-    verifyTokenAndFetchUserInfo(accessToken);
+  if (isChecking) {
+    return <div>正在检查认证状态...</div>;
   }
 
   return (
-      <Routes>
-        <Route path='/' element={<Chat accessToken={accessToken} />} />
-        <Route path='base_information' element={<BaseInformation accessToken={accessToken} />} />
-        <Route path='callback' element={<Callback />} />
-        <Route path='login' element={<>正在重定向到登录页面...</>} />
-        <Route path='/chat/*' element={<Chat accessToken={accessToken} />} />
-      </Routes>
-  )
+    <Routes>
+      <Route path="/login" element={<Login />} />
+      <Route path="/callback" element={<Callback />} />
+      {isAuthenticated ? (
+        <>
+          <Route path="/" element={<Chat accessToken={accessToken} />} />
+          <Route
+            path="/base_information"
+            element={<BaseInformation accessToken={accessToken} />}
+          />
+          <Route path="/chat/*" element={<Chat accessToken={accessToken} />} />
+        </>
+      ) : (
+        <Route path="*" element={<Navigate to="/login" replace />} />
+      )}
+    </Routes>
+  );
 }
 
-export default App
+export default App;

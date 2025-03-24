@@ -7,6 +7,10 @@
     border: 1px solid #e0e0e0;
 }
 
+#session_item {
+    width: 90%
+}
+
 body {
     display: flex;
     flex-direction: column;

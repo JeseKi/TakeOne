@@ -11,6 +11,8 @@ interface BaseInformationProps {
 const BaseInformation: React.FC<BaseInformationProps> = (props: BaseInformationProps) => {
   const { accessToken } = props;
   const navigate = useNavigate();
+  const [alertMessage, setAlertMessage] = useState<string | null>(null);
+  const [showAlert, setShowAlert] = useState<boolean>(false);
 
   const [formData, setFormData] = useState<BaseInformationRequest>({
     max_living_expenses_from_parents: '',
@@ -24,8 +26,6 @@ const BaseInformation: React.FC<BaseInformationProps> = (props: BaseInformationP
     proactive_in_competitions: '',
     likes_reading_extracurricular_books: '',
   });
-  const [alertMessage, setAlertMessage] = useState<string | null>(null);
-  const [showAlert, setShowAlert] = useState<boolean>(false);
 
   const handleChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
     const targetElement = event.target;
