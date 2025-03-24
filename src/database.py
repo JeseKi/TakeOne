@@ -87,6 +87,17 @@ class CreateReport(BaseModel):
 
 ### CRUD
 
+async def get_session(db: AsyncSession, session_id: str):
+    try:
+        query = select(Session).where(Session.uuid == session_id)
+        result = await db.execute(query)
+        session = result.scalar()
+        if not session:
+            raise HTTPException(status_code=404, detail="未找到指定的会话")
+        return session
+    except SQLAlchemyError as e:
+        db.rollback()
+
 async def get_sessions(db: AsyncSession, user_id: str) -> List[str]:
     try:
         query = select(Session).where(Session.user_id == user_id)

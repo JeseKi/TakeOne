@@ -5,10 +5,12 @@ import { useEffect } from 'react';
 import BaseInformation from './pages/BaseInfomation';
 import Callback from './pages/Callback';
 import { GetLoginUrl, GetUserInfo } from './Api';
+import { Chat } from './pages/Chat/Chats';
 
 function App() {
   const navigate = useNavigate();
   const location = useLocation();
+  const accessToken = localStorage.getItem('access_token');
 
   useEffect(() => {
 
@@ -28,46 +30,45 @@ function App() {
 
       redirectToLogin();
     }
+
+  }, [location.pathname, accessToken]);
     
-    const verifyTokenAndFetchUserInfo = async (refreshToken: string) => {
-      try {
-        await GetUserInfo(refreshToken);
-  
-      } catch (error: any) {
-        console.error('Token 验证或获取用户信息失败', error);
-        
-        localStorage.removeItem('refresh_token');
-        localStorage.removeItem('access_token');
-        localStorage.removeItem('id_token');
-        localStorage.removeItem('userInfo');
-        navigate('/login');
-  
-        return (
-          <div>
-            <h2>Token 验证或获取用户信息失败</h2>
-            <p>请重新登录。</p>
-            <p>正在重定向到登录页面...</p>
-          </div>
-        )
-      }
-    };
+  const verifyTokenAndFetchUserInfo = async (access_token: string) => {
+    try {
+      await GetUserInfo(access_token);
 
-    const access_token = localStorage.getItem('access_token');
-
-    if (!access_token) {
+    } catch (error: any) {
+      console.error('Token 验证或获取用户信息失败', error);
+      
+      localStorage.removeItem('access_token');
+      localStorage.removeItem('userInfo');
       navigate('/login');
-    }
-    else {
-      verifyTokenAndFetchUserInfo(access_token);
-    }
 
-  }, [location.pathname]);
+      return (
+        <div>
+          <h2>Token 验证或获取用户信息失败</h2>
+          <p>请重新登录。</p>
+          <p>正在重定向到登录页面...</p>
+        </div>
+      )
+    }
+  };
+
+  if (!accessToken) {
+    navigate('/login');
+    return (<>正在重定向到登录页面...</>);
+  }
+  else {
+    verifyTokenAndFetchUserInfo(accessToken);
+  }
 
   return (
       <Routes>
-        <Route path='/' element={<BaseInformation/ >} />
+        <Route path='/' element={<Chat accessToken={accessToken} />} />
+        <Route path='base_information' element={<BaseInformation accessToken={accessToken} />} />
         <Route path='callback' element={<Callback />} />
         <Route path='login' element={<>正在重定向到登录页面...</>} />
+        <Route path='/chat/*' element={<Chat accessToken={accessToken} />} />
       </Routes>
   )
 }

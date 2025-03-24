@@ -2,8 +2,16 @@ import { useState } from 'react';
 import { TextArea, GradientButton , Alert } from '@lobehub/ui';
 
 import { BaseInformationRequest, MissingFieldsError, PostBaseInformation } from '../Api';
+import { useNavigate } from 'react-router-dom';
 
-function BaseInformation() {
+interface BaseInformationProps {
+  accessToken: string;
+}
+
+const BaseInformation: React.FC<BaseInformationProps> = (props: BaseInformationProps) => {
+  const { accessToken } = props;
+  const navigate = useNavigate();
+
   const [formData, setFormData] = useState<BaseInformationRequest>({
     max_living_expenses_from_parents: '',
     enough_savings_for_college: '',
@@ -32,14 +40,10 @@ function BaseInformation() {
   const handleSubmit = async () => {
     console.log(formData);
 
-    const accessToken = localStorage.getItem('access_token');
-    if (!accessToken) {
-      console.error('未登录');
-      return;
-    }
     try {
       const session_uuid = await PostBaseInformation(formData, accessToken);
       console.log('提交成功:', session_uuid);
+      navigate(`/chat?session=${session_uuid}`);
     } catch (error) {
       if (error instanceof MissingFieldsError) {
         setAlertMessage("请填写所有问题的回答！");

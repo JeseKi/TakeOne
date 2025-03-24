@@ -27,9 +27,7 @@ const Callback: React.FC = () => {
       setLoading(true);
       tokenResponse(code, state)
         .then((token) => {
-        localStorage.setItem('refresh_token', token.refresh_token);
         localStorage.setItem('access_token', token.access_token);
-        localStorage.setItem('id_token', token.id_token);
       })
         .catch((error) => {
         console.error("获取token失败:", error);

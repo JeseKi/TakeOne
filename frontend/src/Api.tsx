@@ -80,6 +80,25 @@ const GetUserInfo = async (accessToken: string): Promise<UserInfoResponse> => {
     }
 }
 
+const GetSessionsUUID = async (accessToken: string): Promise<string[] | null> => {
+    try {
+        const response = await axios.get<string[]>(
+            `${config.backendApiUrl}/sessions`,
+            {
+            headers: {
+                Authorization: `Bearer ${accessToken}`,
+            },
+            }
+        );
+
+        return response.data;
+    }
+    catch (error: any) {
+        console.error('获取对话列表失败', error);
+        throw error;
+    }
+}
+
 const PostBaseInformation = async (data: BaseInformationRequest, accessToken: string): Promise<string> => {
     try {
 
@@ -118,5 +137,5 @@ const PostBaseInformation = async (data: BaseInformationRequest, accessToken: st
     }
 }
 
-export { GetLoginUrl , GetTokenResponse , GetUserInfo , PostBaseInformation};
+export { GetLoginUrl , GetTokenResponse , GetUserInfo , PostBaseInformation , GetSessionsUUID };
 export type { TokenResponse , UserInfoResponse , BaseInformationRequest };

@@ -1,6 +1,6 @@
 import asyncio
 from typing import List
-from fastapi import Depends, FastAPI
+from fastapi import Depends, FastAPI, HTTPException
 from fastapi.concurrency import asynccontextmanager
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.sessions import SessionMiddleware
@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from database import CreateSession, create_session, get_db, get_sessions, init_db
 from jwt_utils import cleanup_expired_states, get_current_user, jwt_router
 from config import SECRET_KEY
+from logger import LogLevel, event_time_log
 from models import BaseInformationRequest, MajorChoice, SessionInfoResponse, UserInfo
 
 origins = [
@@ -49,10 +50,15 @@ async def base_information(info: BaseInformationRequest, user: UserInfo = Depend
     Returns:
         str: 会话id
     """
-    user_id = user.id
-    new_session_info = CreateSession(user_id=user_id, base_information=info)
-    new_session = await create_session(db, new_session_info)
-    return new_session.uuid
+    try:
+        user_id = user.id
+        new_session_info = CreateSession(user_id=user_id, base_information=info)
+        new_session = await create_session(db, new_session_info)
+        return new_session.uuid
+    except Exception as e:
+        event_time_log(f"Error: {e}", level=LogLevel.ERROR)
+        raise HTTPException(status_code=500, detail="Internal Server Error")
+        
 
 @app.post("/api/post_options")
 async def post_options(session_id:str, choice: MajorChoice, user: UserInfo = Depends(get_current_user)) -> bool:
@@ -94,9 +100,13 @@ async def sessions_get(user: UserInfo = Depends(get_current_user), db: AsyncSess
     Returns:
         List[str]: 所有的会话id
     """
-    user_id = user.id
-    sessions_id = await get_sessions(db, user_id)
-    return sessions_id
+    try:
+        user_id = user.id
+        sessions_id = await get_sessions(db, user_id)
+        return sessions_id
+    except Exception as e:
+        event_time_log(f"Error: {e}", level=LogLevel.ERROR)
+        raise HTTPException(status_code=500, detail="Internal Server Error")
 
 @app.get("/api/sessions/{session_id}")
 async def session_get(user: UserInfo = Depends(get_current_user)) -> SessionInfoResponse:
