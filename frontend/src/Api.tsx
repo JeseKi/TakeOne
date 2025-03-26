@@ -45,12 +45,13 @@ interface MajorChoice {
 interface MajorChoiceResult {
     name: string;
     descriptions: string[];
-    chosen_sequence: number[];
+    appearance_order: number[];
 }
 
 interface SessionContentResponse {
     base_information: BaseInformation;
     major_choices_result: MajorChoiceResult[];
+    chosen_sequence: number[];
 }
 
 export class MissingFieldsError extends Error {

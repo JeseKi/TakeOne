@@ -9,11 +9,12 @@ from starlette.middleware.sessions import SessionMiddleware
 from sqlalchemy.ext.asyncio import AsyncSession
 from loguru import logger
 
-from database import CreateChoice, CreateSession, Session, create_choices, create_session, get_db, get_session, get_sessions, init_db
+from database.crud import CreateChoice, CreateSession, Session, create_choices, create_session, get_session, get_sessions
+from database.base import get_db, init_db
 from jwt_utils import cleanup_expired_states, get_current_user, jwt_router
 from config import SECRET_KEY
 from llm import MajorsReveal, gen_majors_reveal
-from models import BaseInformation, Major, MajorChoice, SessionContentResponse, UserInfo
+from schemas import BaseInformation, Major, MajorChoice, SessionContentResponse, UserInfo
 
 origins = [
     "http://localhost:3000", 
@@ -101,7 +102,8 @@ async def session_get(session_id: str, user: UserInfo = Depends(get_current_user
         
         session_response = SessionContentResponse(
             base_information=base_info,
-            major_choices_result=session.choices_list
+            major_choices_result=session.choices_list,
+            chosen_sequence=session.chosen_order
         )
         
         return session_response
@@ -134,7 +136,7 @@ async def gen_options(session_id:str,
         
         for choice in choices:
             selected_choices_name.append(choice.major_a)
-            selected_choices_name.append(choice.major_b)    
+            selected_choices_name.append(choice.major_b)
         can_select_majors = list(set(majors) - set(selected_choices_name))
         
         if len(can_select_majors) == 0:

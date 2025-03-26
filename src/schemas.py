@@ -1,4 +1,3 @@
-
 from typing import List, Optional
 from pydantic import BaseModel
 
@@ -27,11 +26,12 @@ class MajorChoice(BaseModel):
 class MajorChoiceResult(BaseModel):
     name: str
     descriptions: List[str]
-    chosen_sequence: List[int]
+    appearance_order: List[int]
 
 class SessionContentResponse(BaseModel):
     base_information: BaseInformation
     major_choices_result: List[MajorChoiceResult] = []
+    chosen_sequence: List[int] = []
     
 class CallbackRequest(BaseModel):
     code: str

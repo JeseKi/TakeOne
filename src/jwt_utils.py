@@ -2,19 +2,20 @@ import asyncio
 import secrets
 import time
 import requests
+
 from fastapi import Depends, HTTPException, status, APIRouter
 from fastapi.responses import JSONResponse
 from fastapi.security import OAuth2PasswordBearer
 
 from config import CASDOOR_APP_NAME, CASDOOR_CLIENT_ID, CASDOOR_CLIENT_SECRET, CASDOOR_ENDPOINT, \
     CASDOOR_ORGANIZATION_NAME, CASDOOR_REDIRECT_URI, CASDOOR_TOKEN_ENDPOINT
-from models import CallbackRequest, TokenResponse, UserInfo
+from schemas import CallbackRequest, TokenResponse, UserInfo
+
+SESSION_STATE_EXPIRATION_TIME = 600
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl=CASDOOR_TOKEN_ENDPOINT)
 jwt_router = APIRouter()
-
 session_states = {} 
-SESSION_STATE_EXPIRATION_TIME = 600
 
 async def get_current_user(token: str = Depends(oauth2_scheme)) -> UserInfo:
     try:
