@@ -16,21 +16,21 @@ class BaseInformation(BaseModel):
 class Major(BaseModel):
     name: str
     description: str
-    is_chosen: bool = False
+    chosen_order: int = -1
 
 class MajorChoice(BaseModel):
     major_a: Major
     major_b: Major
     need_gen_report: Optional[bool] = False
 
-class MajorChoiceResult(BaseModel):
+class MajorChoiceResults(BaseModel):
     name: str
     descriptions: List[str]
     appearance_order: List[int]
 
 class SessionContentResponse(BaseModel):
     base_information: BaseInformation
-    major_choices_result: List[MajorChoiceResult] = []
+    major_choices_result: List[MajorChoiceResults] = []
     chosen_sequence: List[int] = []
     
 class CallbackRequest(BaseModel):

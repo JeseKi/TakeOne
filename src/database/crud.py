@@ -52,7 +52,7 @@ async def create_session(db: AsyncSession, session: CreateSession) -> Session:
         logger.error(f"数据库错误:{str(e)}")
         raise HTTPException(status_code=500, detail=f"数据库错误: {str(e)}")
     finally:
-        db.close()
+        await db.close()
 
 async def get_session(db: AsyncSession, session_id: str, user_id: str) -> Session:
     try:
@@ -96,7 +96,7 @@ async def create_choices(db: AsyncSession, choices: List[CreateChoice]) -> Choic
                 uuid=uuid, 
                 user_id=choice.user_id, 
                 session_id=choice.session_id, 
-                major_name=choice.name, 
+                name=choice.name, 
                 descriptions=choice.descriptions, 
                 appearance_order=choice.appearance_order
             )
@@ -112,7 +112,7 @@ async def create_choices(db: AsyncSession, choices: List[CreateChoice]) -> Choic
         logger.error(f"数据库错误:{str(e)}")
         raise HTTPException(status_code=500, detail=f"数据库错误: {str(e)}")
     finally:
-        db.close()
+        await db.close()
 
 async def update_choice(db: AsyncSession, new_choice: UpdateChoice):
     try:
@@ -136,7 +136,7 @@ async def update_choice(db: AsyncSession, new_choice: UpdateChoice):
         logger.error(f"数据库错误:{str(e)}")
         raise HTTPException(status_code=500, detail=f"数据库错误: {str(e)}")
     finally:
-        db.close()
+        await db.close()
 
 async def create_report(db: AsyncSession, report: CreateReport):
     try:
@@ -153,7 +153,7 @@ async def create_report(db: AsyncSession, report: CreateReport):
         logger.error(f"数据库错误:{str(e)}")
         raise HTTPException(status_code=500, detail=f"数据库错误: {str(e)}")
     finally:
-        db.close()
+        await db.close()
 
 async def delete_session(db: AsyncSession, session_id: str):
     try:
@@ -167,4 +167,4 @@ async def delete_session(db: AsyncSession, session_id: str):
         logger.error(f"数据库错误:{str(e)}")
         raise HTTPException(status_code=500, detail=f"数据库错误: {str(e)}")
     finally:
-        db.close()
+        await db.close()
