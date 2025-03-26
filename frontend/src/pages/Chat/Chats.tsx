@@ -3,9 +3,10 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { List } from '@lobehub/ui';
 
 import { SessionsList } from './SessionsList';
-import BaseInformation from '../BaseInfomation';
+import BaseInformationPanel from '../BaseInfomation';
 
 import "./Chat.css"
+import SessionContent from './SessionContent';
 
 interface ChatsNavProps {
     accessToken: string;
@@ -30,15 +31,19 @@ const Chat: React.FC<ChatsNavProps> = (props) => {
     }
 
     return (
-        <div>
+        <div id='chat-container'>
             <div id='chats-nav'>
                 <List.Item id='session_item' title={"创建新对话"} onClick={() => handleCreateSession()}/>
                 <hr />
                 <SessionsList accessToken={accessToken} />
             </div>
-            { !sessionId &&
-                <BaseInformation accessToken={accessToken} />
+            <div id='session_content'>
+            { !sessionId ?
+                <BaseInformationPanel accessToken={accessToken} base_information={null}/>
+                :
+                <SessionContent session_id={sessionId} accessToken={accessToken} />
             }
+            </div>
         </div>
     )
 }

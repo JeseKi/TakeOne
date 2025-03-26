@@ -1,6 +1,7 @@
 {
     "base_url" : "",
     "api_key" : "",
+    "model": "",
     "secret_key" : "",
     "casdoor_endpoint" : "",
     "casdoor_client_id" : "",

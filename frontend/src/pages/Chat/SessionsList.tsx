@@ -1,7 +1,7 @@
 import { Alert, List } from '@lobehub/ui';
 import { useEffect, useState } from 'react';
 
-import { GetSessionsUUID } from '../../Api';
+import { GetSessionsID } from '../../Api';
 import { useNavigate } from 'react-router-dom';
 
 interface SessionsListProps {
@@ -22,7 +22,7 @@ export const SessionsList: React.FC<SessionsListProps> = (props) => {
     const navigate = useNavigate(); 
 
     useEffect(() => {
-        GetSessionsUUID(accessToken).then((result) => {
+        GetSessionsID(accessToken).then((result) => {
             setSessionsId(result);
             setLoading(false);
         }).catch((error) => {

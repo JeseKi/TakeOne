@@ -1,8 +1,8 @@
 
-from typing import List
+from typing import List, Optional
 from pydantic import BaseModel
 
-class BaseInformationRequest(BaseModel):
+class BaseInformation(BaseModel):
     max_living_expenses_from_parents: str  # 父母可供的大学生活费上限是多少？
     enough_savings_for_college: str  # 当前积蓄是否可能不贷款供完大学四年的生活费？
     pocket_money_usage: str  # 你平时的零花钱的用途是什么？
@@ -15,21 +15,22 @@ class BaseInformationRequest(BaseModel):
     likes_reading_extracurricular_books: str  # 平时是否喜欢阅读课外书？
 
 class Major(BaseModel):
-    major: str
+    name: str
     description: str
-    is_chosen: bool
+    is_chosen: bool = False
 
 class MajorChoice(BaseModel):
     major_a: Major
     major_b: Major
+    need_gen_report: Optional[bool] = False
 
 class MajorChoiceResult(BaseModel):
-    major_name: str
+    name: str
     descriptions: List[str]
     chosen_sequence: List[int]
 
-class SessionInfoResponse(BaseModel):
-    base_information: BaseInformationRequest
+class SessionContentResponse(BaseModel):
+    base_information: BaseInformation
     major_choices_result: List[MajorChoiceResult] = []
     
 class CallbackRequest(BaseModel):

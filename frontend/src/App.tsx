@@ -2,7 +2,7 @@ import { Navigate, Route, Routes } from 'react-router-dom';
 import './App.css'
 import { useEffect, useState } from 'react';
 
-import BaseInformation from './pages/BaseInfomation';
+import BaseInformationPanel from './pages/BaseInfomation';
 import Callback from './pages/Callback';
 import { GetUserInfo } from './Api';
 import Chat from './pages/Chat/Chats';
@@ -50,7 +50,7 @@ function App() {
           <Route path="/" element={<Chat accessToken={accessToken} />} />
           <Route
             path="/base_information"
-            element={<BaseInformation accessToken={accessToken} />}
+            element={<BaseInformationPanel accessToken={accessToken} base_information={null} />}
           />
           <Route path="/chat/*" element={<Chat accessToken={accessToken} />} />
         </>

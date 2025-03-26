@@ -18,17 +18,39 @@ interface UserInfoResponse {
     preferredUsername: string;
 }
 
-interface BaseInformationRequest {
-    max_living_expenses_from_parents: string;
-    enough_savings_for_college: string;
-    pocket_money_usage: string;
-    willing_to_repeat_high_school_for_money: string;
-    city_tier: string;
-    parents_in_public_sector: string;
-    has_stable_hobby: string;
-    self_learning_after_gaokao: string;
-    proactive_in_competitions: string;
-    likes_reading_extracurricular_books: string;
+interface BaseInformation {
+    max_living_expenses_from_parents: string | '';
+    enough_savings_for_college: string | '';
+    pocket_money_usage: string | '';
+    willing_to_repeat_high_school_for_money: string | '';
+    city_tier: string | '';
+    parents_in_public_sector: string | '';
+    has_stable_hobby: string | '';
+    self_learning_after_gaokao: string | '';
+    proactive_in_competitions: string | '';
+    likes_reading_extracurricular_books: string | '';
+}
+
+interface Major {
+    name: string;
+    description: string;
+    is_chosen: boolean;
+}
+
+interface MajorChoice {
+    major_a: Major;
+    major_b: Major;
+}
+
+interface MajorChoiceResult {
+    name: string;
+    descriptions: string[];
+    chosen_sequence: number[];
+}
+
+interface SessionContentResponse {
+    base_information: BaseInformation;
+    major_choices_result: MajorChoiceResult[];
 }
 
 export class MissingFieldsError extends Error {
@@ -80,7 +102,7 @@ const GetUserInfo = async (accessToken: string): Promise<UserInfoResponse> => {
     }
 }
 
-const GetSessionsUUID = async (accessToken: string): Promise<string[] | null> => {
+const GetSessionsID = async (accessToken: string): Promise<string[] | null> => {
     try {
         const response = await axios.get<string[]>(
             `${config.backendApiUrl}/sessions`,
@@ -99,10 +121,29 @@ const GetSessionsUUID = async (accessToken: string): Promise<string[] | null> =>
     }
 }
 
-const PostBaseInformation = async (data: BaseInformationRequest, accessToken: string): Promise<string> => {
+const GetSessionContent = async (session_id: string, accessToken: string): Promise<SessionContentResponse> => {
+    try {
+        const response = await axios.get<SessionContentResponse>(
+            `${config.backendApiUrl}/sessions/${session_id}`,
+            {
+            headers: {
+                Authorization: `Bearer ${accessToken}`,
+            },
+            }
+        );
+
+        return response.data;
+    }
+    catch (error: any) {
+        console.error('获取对话内容失败', error);
+        throw error;
+    }
+}
+
+const PostBaseInformation = async (data: BaseInformation, accessToken: string): Promise<string> => {
     try {
 
-        const checkRequiredFields = (data: BaseInformationRequest) => {
+        const checkRequiredFields = (data: BaseInformation) => {
             const emptyFields: string[] = [];
             for (const [key, value] of Object.entries(data)) {
                 if (value === '') {
@@ -137,5 +178,5 @@ const PostBaseInformation = async (data: BaseInformationRequest, accessToken: st
     }
 }
 
-export { GetLoginUrl , GetTokenResponse , GetUserInfo , PostBaseInformation , GetSessionsUUID };
-export type { TokenResponse , UserInfoResponse , BaseInformationRequest };
+export { GetLoginUrl , GetTokenResponse , GetUserInfo , PostBaseInformation , GetSessionsID , GetSessionContent };
+export type { TokenResponse , UserInfoResponse , BaseInformation , SessionContentResponse };
