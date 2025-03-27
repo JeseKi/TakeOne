@@ -8,7 +8,7 @@ from loguru import logger
 from database.crud import CreateSession, Session, create_session, get_session, get_sessions
 from database.base import get_db
 from routes.jwt_utils import get_current_user
-from schemas import BaseInformation, SessionContentResponse, UserInfo
+from schemas import BaseInformation, ChoiceResponse, RoundResponse, SessionResponse, UserInfo
     
 sessions_router = APIRouter()
 
@@ -50,7 +50,7 @@ async def sessions_get(user: UserInfo = Depends(get_current_user), db: AsyncSess
         logger.error(f"Error: {e}")
         raise HTTPException(status_code=500, detail="Internal Server Error")
 
-@sessions_router.get("/sessions/{session_id}", response_model=SessionContentResponse)
+@sessions_router.get("/sessions/{session_id}", response_model=SessionResponse)
 async def session_get(session_id: str, user: UserInfo = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
     """拉取这个高中生的特定会话的信息
 
@@ -66,11 +66,37 @@ async def session_get(session_id: str, user: UserInfo = Depends(get_current_user
         
         session: Session = await get_session(db, session_id, user_id)
         base_info = BaseInformation(**json.loads(session.base_information))
+        status = session.status
+        current_round_number = session.current_round_number
+        final_major_name = session.final_major_name
+        rounds = []
+        for round in session.rounds:
+            appearances = []
+            for appearance in round.appearances:
+                appearances.append(
+                    ChoiceResponse(
+                        major_id=appearance.uuid,
+                        major_name=appearance.major_name,
+                        description=appearance.description,
+                        appearance_index=appearance.appearance_index,
+                        is_winner_in_comparison=appearance.is_winner_in_comparison
+                    )
+                )
+            rounds.append(
+                RoundResponse(
+                    round_number=round.round_number,
+                    status=round.status,
+                    current_round_majors=round.current_round_majors,
+                    appearances=appearances
+                )
+            )
         
-        session_response = SessionContentResponse(
+        session_response = SessionResponse(
             base_information=base_info,
-            major_choices_result=session.choices_list,
-            chosen_sequence=session.chosen_order
+            status=status,
+            current_round_number=current_round_number,
+            final_major_name=final_major_name,
+            rounds=rounds
         )
         
         return session_response

@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Set
 from uuid import uuid4
 from sqlalchemy import select
 from sqlalchemy.orm import joinedload
@@ -9,28 +9,32 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from pydantic import BaseModel
 
 from loguru import logger
-from database.models import Choice, Session
+from database.models import ChoiceAppearance, Session, Round
 from schemas import BaseInformation
 
 class CreateSession(BaseModel):
     user_id: str
     base_information: BaseInformation
     
-class CreateChoice(BaseModel):
-    user_id: str
+class UpdateSession(BaseModel):
     session_id: str
-    name: str
-    descriptions: str
-    appearance_order: int
+    final_major_name: str
+    
+class CreateRound(BaseModel):
+    session_id: str
+    round_number: int
+    current_round_majors: Set[str]
+    
+class CreateChoice(BaseModel):
+    round_id: str
+    session_id: str
+    major_name: str
+    description: str
+    appearance_index: int
     
 class UpdateChoice(BaseModel):
     uuid: str
-    description: str
-    appearance_order: int
-    
-class UpdateSession(BaseModel):
-    session_id: str
-    chosen_order: List[int]
+    is_winner_in_comparison: bool
     
 class CreateReport(BaseModel):
     session_id: str
@@ -41,8 +45,11 @@ class CreateReport(BaseModel):
 
 async def create_session(db: AsyncSession, session: CreateSession) -> Session:
     try:
-        uuid = str(uuid4())
-        new_session = Session(uuid=uuid, user_id=session.user_id, base_information=session.base_information.model_dump_json(), report=None, chosen_order=None)
+        new_session = Session(
+            user_id=session.user_id, 
+            base_information=session.base_information.model_dump_json(),
+            final_major_name=None
+            )
         db.add(new_session)
         await db.commit()
         await db.refresh(new_session)
@@ -59,7 +66,7 @@ async def get_session(db: AsyncSession, session_id: str, user_id: str) -> Sessio
         query = (
             select(Session).
             where(Session.uuid == session_id).
-            options(joinedload(Session.choices_list))
+            options(joinedload(Session.rounds).joinedload(Round.appearances))
             )
         
         result = await db.execute(query)
@@ -70,6 +77,8 @@ async def get_session(db: AsyncSession, session_id: str, user_id: str) -> Sessio
     except SQLAlchemyError as e:
         logger.error(f"数据库错误:{str(e)}")
         await db.rollback()
+    finally:
+        await db.close()
 
 async def get_sessions(db: AsyncSession, user_id: str) -> List[str]:
     try:
@@ -83,22 +92,56 @@ async def get_sessions(db: AsyncSession, user_id: str) -> List[str]:
         await db.rollback()
         logger.error(f"数据库错误:{str(e)}")
         raise HTTPException(status_code=500, detail=f"数据库错误: {str(e)}")
-    
-async def update_session(db: AsyncSession, session: UpdateSession):
-    pass
+    finally:
+        await db.close()
+        
+async def update_session(db: AsyncSession, session: UpdateSession) -> Session:
+    try:
+        query = select(Session).where(Session.uuid == session.session_id)
+        result = await db.execute(query)
+        session = result.scalar()
+        if not session:
+            raise HTTPException(status_code=404, detail="未找到指定的会话")
+        
+        session.final_major_name = session.final_major_name
+        db.add(session)
+        await db.commit()
+        await db.refresh(session)
+        return session
+    except SQLAlchemyError as e:
+        await db.rollback()
+        logger.error(f"数据库错误:{str(e)}")
+        raise HTTPException(status_code=500, detail=f"数据库错误: {str(e)}")
+    finally:
+        await db.close()
 
-async def create_choices(db: AsyncSession, choices: List[CreateChoice]) -> Choice:
+async def create_round(db: AsyncSession, round: CreateRound):
+    try:
+        new_round = Round(
+            session_id=round.session_id,
+            round_number=round.round_number,
+            current_round_majors=round.current_round_majors
+        )
+        db.add(new_round)
+        await db.commit()
+        await db.refresh(new_round)
+    except Exception as e:
+        await db.rollback()
+        logger.error(f"数据库错误:{str(e)}")
+        raise HTTPException(status_code=500, detail=f"数据库错误: {str(e)}")
+    finally:
+        await db.close()
+
+async def create_choices(db: AsyncSession, choices: List[CreateChoice]) -> ChoiceAppearance:
     new_choices = []
     try:
         for choice in choices:
-            uuid = str(uuid4())
-            new_choice = Choice(
-                uuid=uuid, 
-                user_id=choice.user_id, 
+            new_choice = ChoiceAppearance(
+                round_id=choice.round_id,
                 session_id=choice.session_id, 
-                name=choice.name, 
-                descriptions=choice.descriptions, 
-                appearance_order=choice.appearance_order
+                major_name=choice.major_name, 
+                description=choice.description, 
+                appearance_index=choice.appearance_index
             )
             new_choices.append(new_choice)
             db.add(new_choice)
@@ -114,23 +157,24 @@ async def create_choices(db: AsyncSession, choices: List[CreateChoice]) -> Choic
     finally:
         await db.close()
 
-async def update_choice(db: AsyncSession, new_choice: UpdateChoice):
+async def update_choice(db: AsyncSession, new_choices: List[UpdateChoice]) -> ChoiceAppearance:
+    updated_choices = []
     try:
-        choice = db.query(Choice).filter(Choice.uuid == new_choice.uuid).first()
-        if not choice:
-            raise HTTPException(status_code=404, detail="未找到指定的选择记录")
+        for new_choice in new_choices:
+            query = select(ChoiceAppearance).where(ChoiceAppearance.uuid == new_choice.uuid)
+            result = await db.execute(query)
+            choice = result.scalar()
+            if not choice:
+                raise HTTPException(status_code=404, detail="未找到指定的选择记录")
             
-        descriptions: List[str] = choice.descriptions.split("</-|-\>")
-        descriptions.append(new_choice.description)
-        choice.descriptions = "</-|-\>".join(descriptions)
-        
-        order: List[str] = choice.appearance_order.split(",")
-        order.append(str(new_choice.appearance_order))
-        choice.appearance_order = ",".join(order)
+            choice.is_winner_in_comparison = new_choice.is_winner_in_comparison
+            updated_choices.append(choice)
+            db.add(choice)
         
         await db.commit()
-        await db.refresh(choice)
-        return choice
+        for choice in updated_choices:
+            await db.refresh(choice)
+        return updated_choices
     except SQLAlchemyError as e:
         await db.rollback()
         logger.error(f"数据库错误:{str(e)}")
@@ -140,14 +184,7 @@ async def update_choice(db: AsyncSession, new_choice: UpdateChoice):
 
 async def create_report(db: AsyncSession, report: CreateReport):
     try:
-        session = db.query(Session).filter(Session.uuid == report.session_id).first()
-        if not session:
-            raise HTTPException(status_code=404, detail="未找到指定的会话")
-            
-        session.report = report.report
-        await db.commit()
-        await db.refresh(session)
-        return session
+        pass
     except SQLAlchemyError as e:
         await db.rollback()
         logger.error(f"数据库错误:{str(e)}")
@@ -157,11 +194,7 @@ async def create_report(db: AsyncSession, report: CreateReport):
 
 async def delete_session(db: AsyncSession, session_id: str):
     try:
-        result = db.query(Session).filter(Session.uuid == session_id).delete()
-        if not result:
-            raise HTTPException(status_code=404, detail="未找到指定的会话")
-        await db.commit()
-        return True
+        pass
     except SQLAlchemyError as e:
         await db.rollback()
         logger.error(f"数据库错误:{str(e)}")

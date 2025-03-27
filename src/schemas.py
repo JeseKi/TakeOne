@@ -1,42 +1,20 @@
+from enum import Enum
 from typing import List, Optional
 from pydantic import BaseModel
 
-class BaseInformation(BaseModel):
-    max_living_expenses_from_parents: str  # 父母可供的大学生活费上限是多少？
-    enough_savings_for_college: str  # 当前积蓄是否可能不贷款供完大学四年的生活费？
-    pocket_money_usage: str  # 你平时的零花钱的用途是什么？
-    willing_to_repeat_high_school_for_money: str  # 假如让你再读三年高三，每年都会给你的家庭免费的十万人民币，你愿意吗？
-    city_tier: str  # 主要居住地区是几线城市？
-    parents_in_public_sector: str  # 父母是否属于体制内？
-    has_stable_hobby: str  # 是否有稳定的爱好？（需要每周起码有一半的天数会每天做的，且持续时间是一年以上）
-    self_learning_after_gaokao: str  # 在高考完后的这段时间，是否有每天自主学习的习惯？
-    proactive_in_competitions: str  # 是否主动参加过竞赛？（被推着上去推着走的不算）
-    likes_reading_extracurricular_books: str  # 平时是否喜欢阅读课外书？
+class GenerrateType(Enum):
+    CHOICES = "choices"
+    REPORT = "report"
+    ROUND = "round"
 
-class Major(BaseModel):
-    name: str
-    description: str
-    chosen_order: int = -1
-
-class MajorChoice(BaseModel):
-    major_a: Major
-    major_b: Major
-    need_gen_report: Optional[bool] = False
-
-class MajorChoiceResults(BaseModel):
-    name: str
-    descriptions: List[str]
-    appearance_order: List[int]
-
-class SessionContentResponse(BaseModel):
-    base_information: BaseInformation
-    major_choices_result: List[MajorChoiceResults] = []
-    chosen_sequence: List[int] = []
-    
 class CallbackRequest(BaseModel):
     code: str
     state: str
-    
+
+class MajorChoiceRequest(BaseModel):
+    major_id: str
+    is_winner_in_comparison: bool
+
 class TokenResponse(BaseModel):
     access_token: str
     refresh_token: str
@@ -52,3 +30,49 @@ class UserInfo(BaseModel):
     email_verified_at: str
     created_at: str
     updated_at: str
+
+class BaseInformation(BaseModel):
+    max_living_expenses_from_parents: str  # 父母可供的大学生活费上限是多少？
+    enough_savings_for_college: str  # 当前积蓄是否可能不贷款供完大学四年的生活费？
+    pocket_money_usage: str  # 你平时的零花钱的用途是什么？
+    willing_to_repeat_high_school_for_money: str  # 假如让你再读三年高三，每年都会给你的家庭免费的十万人民币，你愿意吗？
+    city_tier: str  # 主要居住地区是几线城市？
+    parents_in_public_sector: str  # 父母是否属于体制内？
+    has_stable_hobby: str  # 是否有稳定的爱好？（需要每周起码有一半的天数会每天做的，且持续时间是一年以上）
+    self_learning_after_gaokao: str  # 在高考完后的这段时间，是否有每天自主学习的习惯？
+    proactive_in_competitions: str  # 是否主动参加过竞赛？（被推着上去推着走的不算）
+    likes_reading_extracurricular_books: str  # 平时是否喜欢阅读课外书？
+
+class ChoiceResponse(BaseModel):
+    major_id: str
+    major_name: str
+    description: str
+    appearance_index: int
+    is_winner_in_comparison: Optional[bool] = False
+    
+class RoundResponse(BaseModel):
+    round_number: int
+    status: str
+    current_round_majors: List[str]
+    appearances: List[ChoiceResponse]
+    
+class SessionResponse(BaseModel):
+    base_information: BaseInformation
+    status: str
+    current_round_number: int
+    final_major_name: Optional[str] = None
+    rounds: List[RoundResponse]
+    
+class PostChoicesResponse(BaseModel):
+    generate_type: GenerrateType
+    
+class GetChoicesResponse(BaseModel):
+    choices: List[ChoiceResponse]
+    
+class GetRoundResponse(BaseModel):
+    round_number: int
+    current_round_majors: List[str]
+    choices: List[ChoiceResponse]
+    
+class GetReportResponse(BaseModel):
+    report: str
