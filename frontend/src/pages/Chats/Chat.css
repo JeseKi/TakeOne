@@ -11,6 +11,7 @@
     width: 15%;
     height: 100%;
     border: 1px solid #e0e0e0;
+    z-index: 100;
 }
 
 #session_item {

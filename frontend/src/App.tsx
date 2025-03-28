@@ -2,10 +2,10 @@ import { Navigate, Route, Routes } from 'react-router-dom';
 import './App.css'
 import { useEffect, useState } from 'react';
 
-import BaseInformationPanel from './pages/BaseInfomation';
+import BaseInformationPanel from './components/BaseInfomation';
 import Callback from './pages/Callback';
 import { GetUserInfo } from './Api';
-import Chat from './pages/Chat/Chats';
+import Chat from './pages/Chats/Chats';
 import Login from './pages/Login';
 
 function App() {

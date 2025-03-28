@@ -18,7 +18,8 @@ class CreateSession(BaseModel):
     
 class UpdateSession(BaseModel):
     session_id: str
-    final_major_name: str
+    current_round_number: int
+    final_major_name: str | None = None
     
 class CreateRound(BaseModel):
     session_id: str
@@ -100,15 +101,16 @@ async def get_sessions(db: AsyncSession, user_id: str) -> List[str]:
     finally:
         await db.close()
         
-async def update_session(db: AsyncSession, session: UpdateSession) -> Session:
+async def update_session(db: AsyncSession, session_update: UpdateSession) -> Session:
     try:
-        query = select(Session).where(Session.uuid == session.session_id)
+        query = select(Session).where(Session.uuid == session_update.session_id)
         result = await db.execute(query)
         session = result.scalar()
         if not session:
             raise HTTPException(status_code=404, detail="未找到指定的会话")
         
-        session.final_major_name = session.final_major_name
+        session.current_round_number = session_update.current_round_number
+        session.final_major_name = session_update.final_major_name
         db.add(session)
         await db.commit()
         await db.refresh(session)
@@ -143,13 +145,13 @@ async def create_round(db: AsyncSession, round: CreateRound) -> Round:
         
 async def update_round(db: AsyncSession, round_update: UpdateRound) -> Round:
     try:
-        query = select(Round).where(Round.uuid == UpdateRound.round_id)
+        query = select(Round).where(Round.uuid == round_update.round_id)
         result = await db.execute(query)
         round = result.scalar()
         if not round:
             raise HTTPException(status_code=404, detail="未找到指定的轮次")
         
-        round.status = UpdateRound.status
+        round.status = round_update.status
         db.add(round)
         await db.commit()
         await db.refresh(round)

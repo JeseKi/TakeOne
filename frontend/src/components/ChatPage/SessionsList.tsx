@@ -13,7 +13,7 @@ interface SessionItem {
     description: string;
 }
 
-export const SessionsList: React.FC<SessionsListProps> = (props) => {
+export default function SessionsList(props: SessionsListProps) {
     const { accessToken } = props;
     const [showAlert, setShowAlert] = useState<boolean>(false);
     const [sessionsId, setSessionsId] = useState<string[] | null>(null);

@@ -51,7 +51,7 @@ class ChoiceResponse(BaseModel):
     major_name: str
     description: str
     appearance_index: int
-    is_winner_in_comparison: Optional[bool] = False
+    is_winner_in_comparison: Optional[bool] = None
     
 class RoundResponse(BaseModel):
     round_number: int

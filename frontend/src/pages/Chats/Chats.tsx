@@ -2,11 +2,11 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { List } from '@lobehub/ui';
 
-import { SessionsList } from './SessionsList';
-import BaseInformationPanel from '../BaseInfomation';
+import SessionsList from '../../components/ChatPage/SessionsList';
+import BaseInformationPanel from '../../components/BaseInfomation';
+import SessionContent from '../../components/ChatPage/SessionContent';
 
 import "./Chat.css"
-import SessionContent from './SessionContent';
 
 interface ChatsNavProps {
     accessToken: string;

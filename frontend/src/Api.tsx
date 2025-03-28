@@ -43,7 +43,7 @@ export interface ChoiceResponse {
     major_name: string;
     description: string;
     appearance_index: number;
-    is_winner_in_comparison?: boolean;
+    is_winner_in_comparison?: boolean | null;
 }
 
 export interface RoundResponse {
@@ -55,7 +55,7 @@ export interface RoundResponse {
 
 export interface MajorChoice {
     major_id: string;
-    is_winner_in_comparison: boolean;
+    is_winner_in_comparison?: boolean | null;
 }
 
 export interface MajorChoiceRequest {
@@ -195,7 +195,6 @@ const GetSessionContent = async (session_id: string, accessToken: string): Promi
     }
 }
 
-// 新增专业选择相关的API接口
 const GetChoices = async (session_id: string, accessToken: string): Promise<GetChoicesResponse> => {
     try {
         const response = await axios.get<GetChoicesResponse>(

@@ -99,6 +99,8 @@ async def session_get(session_id: str, user: UserInfo = Depends(get_current_user
             rounds=rounds
         )
         
+        logger.debug(f"Session {session_id} retrieved successfully: {session_response}")
+        
         return session_response
     except Exception as e:
         logger.error(f"Error: {e}")
