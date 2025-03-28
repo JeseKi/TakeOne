@@ -39,7 +39,7 @@ const Chat: React.FC<ChatsNavProps> = (props) => {
             </div>
             <div id='session_content'>
             { !sessionId ?
-                <BaseInformationPanel accessToken={accessToken} base_information={null}/>
+                <BaseInformationPanel accessToken={accessToken} base_information={null} submit_event={undefined}/>
                 :
                 <SessionContent session_id={sessionId} accessToken={accessToken} />
             }

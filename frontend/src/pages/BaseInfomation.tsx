@@ -7,16 +7,17 @@ import { useNavigate } from 'react-router-dom';
 interface BaseInformationProps {
   accessToken: string;
   base_information: BaseInformation | null;
+  submit_event?: () => void;
 }
 
 const BaseInformationPanel: React.FC<BaseInformationProps> = (props: BaseInformationProps) => {
-  const { accessToken , base_information } = props;
+  const { accessToken , base_information, submit_event: onSubmit } = props;
   const navigate = useNavigate();
   const [alertMessage, setAlertMessage] = useState<string | null>(null);
   const [showAlert, setShowAlert] = useState<boolean>(false);
   const [formData, setFormData] = useState<BaseInformation>(() => {
 
-    if (base_information !== null) {
+  if (base_information !== null) {
       return { ...base_information };
     }
     return {
@@ -58,6 +59,16 @@ const BaseInformationPanel: React.FC<BaseInformationProps> = (props: BaseInforma
       }
     }
   };
+
+	const handleCommitEvent = () => {
+		if (onSubmit !== undefined) {
+		  handleSubmit();
+		  onSubmit();
+		}
+		else {
+		  handleSubmit();
+		}
+	};
 
   return (
     <>
@@ -150,7 +161,7 @@ const BaseInformationPanel: React.FC<BaseInformationProps> = (props: BaseInforma
       />
 
       {base_information === null && 
-        <GradientButton onClick={handleSubmit} htmlType="submit">
+        <GradientButton onClick={handleCommitEvent} htmlType="submit">
         提交
         </GradientButton>
       }

@@ -31,16 +31,66 @@ interface BaseInformation {
     likes_reading_extracurricular_books: string | '';
 }
 
-interface Major {
-    name: string;
-    description: string;
-    is_chosen: boolean;
+// 新增专业选择相关的接口
+export enum GenerateType {
+    CHOICES = "choices",
+    REPORT = "report",
+    ROUND = "round"
 }
 
-interface MajorChoice {
-    major_a: Major;
-    major_b: Major;
+export interface ChoiceResponse {
+    major_id: string;
+    major_name: string;
+    description: string;
+    appearance_index: number;
+    is_winner_in_comparison?: boolean;
 }
+
+export interface RoundResponse {
+    round_number: number;
+    status: string;
+    current_round_majors: string[];
+    appearances: ChoiceResponse[];
+}
+
+export interface MajorChoice {
+    major_id: string;
+    is_winner_in_comparison: boolean;
+}
+
+export interface MajorChoiceRequest {
+    choices: [MajorChoice, MajorChoice] | null;
+}
+
+export interface PostChoicesResponse {
+    generate_type: GenerateType;
+}
+
+export interface GetChoicesResponse {
+    choices: [ChoiceResponse, ChoiceResponse];
+}
+
+export interface GetRoundResponse {
+    current_round_number: number;
+    current_round_majors: string[];
+    choices: [ChoiceResponse, ChoiceResponse];
+}
+
+export interface GetReportResponse {
+    report: string;
+}
+
+// 修改原有接口名称避免冲突
+// interface MajorInfo {
+//     name: string;
+//     description: string;
+//     is_chosen: boolean;
+// }
+// 
+// interface MajorPair {
+//     major_a: MajorInfo;
+//     major_b: MajorInfo;
+// }
 
 interface MajorChoiceResult {
     name: string;
@@ -52,6 +102,10 @@ interface SessionContentResponse {
     base_information: BaseInformation;
     major_choices_result: MajorChoiceResult[];
     chosen_sequence: number[];
+    rounds?: RoundResponse[];
+    current_round_number?: number;
+    status?: string;
+    final_major_name?: string;
 }
 
 export class MissingFieldsError extends Error {
@@ -141,6 +195,76 @@ const GetSessionContent = async (session_id: string, accessToken: string): Promi
     }
 }
 
+// 新增专业选择相关的API接口
+const GetChoices = async (session_id: string, accessToken: string): Promise<GetChoicesResponse> => {
+    try {
+        const response = await axios.get<GetChoicesResponse>(
+            `${config.backendApiUrl}/options/get_choices/${session_id}`,
+            {
+                headers: {
+                    Authorization: `Bearer ${accessToken}`,
+                },
+            }
+        );
+        return response.data;
+    } catch (error: any) {
+        console.error('获取选项失败', error);
+        throw error;
+    }
+}
+
+const PostChoices = async (session_id: string, choices: MajorChoiceRequest, accessToken: string): Promise<PostChoicesResponse> => {
+    try {
+        const response = await axios.post<PostChoicesResponse>(
+            `${config.backendApiUrl}/options/post_choices/${session_id}`,
+            choices,
+            {
+                headers: {
+                    Authorization: `Bearer ${accessToken}`,
+                },
+            }
+        );
+        return response.data;
+    } catch (error: any) {
+        console.error('提交选择失败', error);
+        throw error;
+    }
+}
+
+const GetRound = async (session_id: string, accessToken: string): Promise<GetRoundResponse> => {
+    try {
+        const response = await axios.get<GetRoundResponse>(
+            `${config.backendApiUrl}/options/get_round/${session_id}`,
+            {
+                headers: {
+                    Authorization: `Bearer ${accessToken}`,
+                },
+            }
+        );
+        return response.data;
+    } catch (error: any) {
+        console.error('获取新一轮失败', error);
+        throw error;
+    }
+}
+
+const GetReport = async (session_id: string, accessToken: string): Promise<GetReportResponse> => {
+    try {
+        const response = await axios.get<GetReportResponse>(
+            `${config.backendApiUrl}/options/gen_report/${session_id}`,
+            {
+                headers: {
+                    Authorization: `Bearer ${accessToken}`,
+                },
+            }
+        );
+        return response.data;
+    } catch (error: any) {
+        console.error('获取报告失败', error);
+        throw error;
+    }
+}
+
 const PostBaseInformation = async (data: BaseInformation, accessToken: string): Promise<string> => {
     try {
 
@@ -179,5 +303,5 @@ const PostBaseInformation = async (data: BaseInformation, accessToken: string): 
     }
 }
 
-export { GetLoginUrl , GetTokenResponse , GetUserInfo , PostBaseInformation , GetSessionsID , GetSessionContent };
+export { GetLoginUrl , GetTokenResponse , GetUserInfo , PostBaseInformation , GetSessionsID , GetSessionContent, GetChoices, PostChoices, GetRound, GetReport };
 export type { TokenResponse , UserInfoResponse , BaseInformation , SessionContentResponse };

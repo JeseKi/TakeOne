@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import List, Optional
+from typing import List, Optional, Tuple
 from pydantic import BaseModel
 
 class GenerrateType(Enum):
@@ -11,9 +11,12 @@ class CallbackRequest(BaseModel):
     code: str
     state: str
 
-class MajorChoiceRequest(BaseModel):
+class MajorChoice(BaseModel):
     major_id: str
     is_winner_in_comparison: bool
+    
+class MajorChoiceRequest(BaseModel):
+    choices: Optional[Tuple[MajorChoice, MajorChoice]] = (None, None)
 
 class TokenResponse(BaseModel):
     access_token: str
@@ -67,12 +70,12 @@ class PostChoicesResponse(BaseModel):
     generate_type: GenerrateType
     
 class GetChoicesResponse(BaseModel):
-    choices: List[ChoiceResponse]
+    choices: Tuple[ChoiceResponse, ChoiceResponse]
     
 class GetRoundResponse(BaseModel):
-    round_number: int
+    current_round_number: int
     current_round_majors: List[str]
-    choices: List[ChoiceResponse]
+    choices: Tuple[ChoiceResponse, ChoiceResponse]
     
 class GetReportResponse(BaseModel):
     report: str

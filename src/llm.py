@@ -8,8 +8,8 @@ from openai import AsyncOpenAI
 from config import BASE_URL, API_KEY, MODEL
 
 class MajorsReveal(BaseModel):
-    major_a_description: str
-    major_b_description: str
+    major_1_description: str
+    major_2_description: str
 
 async_client = AsyncOpenAI(api_key=API_KEY, base_url=BASE_URL)
 
@@ -66,7 +66,7 @@ async def gen_majors_reveal(infos: str, major_a: str, major_b: str) -> MajorsRev
         )
         logger.debug(f"Response: {response}")
         majors_reveal_dict:dict = await extract_majors_from_json_codeblock(response.choices[0].message.content)
-        majors_reveal = MajorsReveal(major_a_description=majors_reveal_dict[major_a], major_b_description=majors_reveal_dict[major_b])
+        majors_reveal = MajorsReveal(major_1_description=majors_reveal_dict[major_a], major_2_description=majors_reveal_dict[major_b])
             
         return majors_reveal
     except Exception as e:

@@ -1,4 +1,4 @@
-from typing import List, Set
+from typing import List, Set, Tuple
 from uuid import uuid4
 from sqlalchemy import select
 from sqlalchemy.orm import joinedload
@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from pydantic import BaseModel
 
 from loguru import logger
-from database.models import ChoiceAppearance, Session, Round
+from database.models import ChoiceAppearance, Session, Round, RoundStatus
 from schemas import BaseInformation
 
 class CreateSession(BaseModel):
@@ -24,6 +24,10 @@ class CreateRound(BaseModel):
     session_id: str
     round_number: int
     current_round_majors: Set[str]
+    
+class UpdateRound(BaseModel):
+    round_id: str
+    status: RoundStatus
     
 class CreateChoice(BaseModel):
     round_id: str
@@ -72,6 +76,7 @@ async def get_session(db: AsyncSession, session_id: str, user_id: str) -> Sessio
         result = await db.execute(query)
         session = result.scalar()
         if not session or session.user_id != user_id:
+            logger.error(f"未找到指定的会话: {session_id}, user_id: {user_id}")
             raise HTTPException(status_code=404, detail="未找到指定的会话")
         return session
     except SQLAlchemyError as e:
@@ -115,27 +120,57 @@ async def update_session(db: AsyncSession, session: UpdateSession) -> Session:
     finally:
         await db.close()
 
-async def create_round(db: AsyncSession, round: CreateRound):
+async def create_round(db: AsyncSession, round: CreateRound) -> Round:
     try:
+        current_round_majors_list = list(round.current_round_majors)
+        
         new_round = Round(
             session_id=round.session_id,
             round_number=round.round_number,
-            current_round_majors=round.current_round_majors
+            current_round_majors=current_round_majors_list
         )
         db.add(new_round)
         await db.commit()
         await db.refresh(new_round)
+        
+        return new_round
     except Exception as e:
         await db.rollback()
         logger.error(f"数据库错误:{str(e)}")
         raise HTTPException(status_code=500, detail=f"数据库错误: {str(e)}")
     finally:
         await db.close()
+        
+async def update_round(db: AsyncSession, round_update: UpdateRound) -> Round:
+    try:
+        query = select(Round).where(Round.uuid == UpdateRound.round_id)
+        result = await db.execute(query)
+        round = result.scalar()
+        if not round:
+            raise HTTPException(status_code=404, detail="未找到指定的轮次")
+        
+        round.status = UpdateRound.status
+        db.add(round)
+        await db.commit()
+        await db.refresh(round)
+        return round
+    except SQLAlchemyError as e:
+        await db.rollback()
+        logger.error(f"数据库错误:{str(e)}")
+        raise HTTPException(status_code=500, detail=f"数据库错误: {str(e)}")
+    finally:
+        await db.close()
 
-async def create_choices(db: AsyncSession, choices: List[CreateChoice]) -> ChoiceAppearance:
+async def create_choices(db: AsyncSession, choices: Tuple[CreateChoice, CreateChoice], user_id: str) -> Tuple[ChoiceAppearance, ChoiceAppearance]:
     new_choices = []
     try:
         for choice in choices:
+            query = select(Session).where(Session.uuid == choice.session_id)
+            result = await db.execute(query)
+            session = result.scalar()
+            if not session or session.user_id != user_id:
+                raise HTTPException(status_code=404, detail="未找到指定的会话")
+            
             new_choice = ChoiceAppearance(
                 round_id=choice.round_id,
                 session_id=choice.session_id, 
@@ -149,7 +184,7 @@ async def create_choices(db: AsyncSession, choices: List[CreateChoice]) -> Choic
         await db.commit()
         for choice in new_choices:
             await db.refresh(choice)
-        return new_choices
+        return new_choices[:2]
     except SQLAlchemyError as e:
         await db.rollback()
         logger.error(f"数据库错误:{str(e)}")
@@ -157,7 +192,7 @@ async def create_choices(db: AsyncSession, choices: List[CreateChoice]) -> Choic
     finally:
         await db.close()
 
-async def update_choice(db: AsyncSession, new_choices: List[UpdateChoice]) -> ChoiceAppearance:
+async def update_choices(db: AsyncSession, new_choices: Tuple[UpdateChoice, UpdateChoice]) -> ChoiceAppearance:
     updated_choices = []
     try:
         for new_choice in new_choices:

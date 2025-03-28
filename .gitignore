@@ -5,7 +5,10 @@ memory.db
 test.py
 sessions.db
 logs.log
-
+.windsurfrules
+.recyclebin
+thinking
+__pycache__
 *.pyc
 
 learns

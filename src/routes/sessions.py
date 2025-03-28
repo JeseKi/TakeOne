@@ -51,7 +51,7 @@ async def sessions_get(user: UserInfo = Depends(get_current_user), db: AsyncSess
         raise HTTPException(status_code=500, detail="Internal Server Error")
 
 @sessions_router.get("/sessions/{session_id}", response_model=SessionResponse)
-async def session_get(session_id: str, user: UserInfo = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+async def session_get(session_id: str, user: UserInfo = Depends(get_current_user), db: AsyncSession = Depends(get_db)) -> SessionResponse:
     """拉取这个高中生的特定会话的信息
 
     Args:
@@ -59,7 +59,7 @@ async def session_get(session_id: str, user: UserInfo = Depends(get_current_user
         user (UserInfo, optional): JWT认证的用户信息. Defaults to Depends(get_current_user).
 
     Returns:
-        SessionInfoResponse: 具体的会话信息
+        SessionResponse: 具体的会话信息
     """
     try:
         user_id: str = user.id

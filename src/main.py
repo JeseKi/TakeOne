@@ -37,4 +37,4 @@ app.add_middleware(SessionMiddleware, secret_key=SECRET_KEY)
 
 app.include_router(jwt_router, prefix="/api/auth")
 app.include_router(sessions_router, prefix="/api")
-app.include_router(options_router, prefix="/api")
+app.include_router(options_router, prefix="/api/options")
