@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Card, Button, Modal, Divider, Tag } from 'antd';
-import { InfoCircleOutlined, TrophyOutlined, StopOutlined } from '@ant-design/icons';
+import { InfoCircleOutlined, TrophyOutlined, StopOutlined, LoadingOutlined } from '@ant-design/icons';
 
 import {
   RoundResponse,
@@ -8,33 +8,41 @@ import {
   MajorChoice
 } from '../../Api';
 
+import './RoundCard.css';
+
 interface RoundCardProps {
   round: RoundResponse;
   isLatest: boolean;
   isActive: boolean;
   latestChoices: [ChoiceResponse, ChoiceResponse] | null;
   onSelectChoice: (choice1: MajorChoice, choice2: MajorChoice) => void;
+  isLoading?: boolean;
 }
 
-const RoundCard: React.FC<RoundCardProps> = ({ round, isLatest, isActive, latestChoices, onSelectChoice }) => {
+const RoundCard: React.FC<RoundCardProps> = ({ 
+  round, 
+  isLatest, 
+  isActive, 
+  latestChoices, 
+  onSelectChoice,
+  isLoading: externalLoading = false
+}) => {
   const [infoModalVisible, setInfoModalVisible] = useState(false);
   const [choice1Hover, setChoice1Hover] = useState(false);
   const [choice2Hover, setChoice2Hover] = useState(false);
+  const [internalLoading, setInternalLoading] = useState(false);
   
-  // 获取晋级的专业
+  const isLoading = internalLoading || externalLoading;
+  
   const advancedMajors = round.appearances.filter(a => a.is_winner_in_comparison === true).map(a => a.major_name);
-  // 获取淘汰的专业
   const eliminatedMajors = round.appearances.filter(a => a.is_winner_in_comparison === false).map(a => a.major_name);
-  // 获取待选择的专业
   const pendingMajors = round.current_round_majors.filter(major => 
     !round.appearances.some(a => a.major_name === major && a.is_winner_in_comparison !== null)
   );
   
-  // 获取当前活跃轮次的未选择的选项
   const getUnselectedChoicesInActiveRound = () => {
     if (!isActive) return null;
     
-    // 查找round.appearances中is_winner_in_comparison为null的选项
     const unselectedAppearances = round.appearances.filter(a => a.is_winner_in_comparison === null);
     
     if (unselectedAppearances.length === 2) {
@@ -47,8 +55,11 @@ const RoundCard: React.FC<RoundCardProps> = ({ round, isLatest, isActive, latest
     return null;
   };
   
-  // 获取当前应显示的选项（未选择的或latestChoices）
   const currentChoices = getUnselectedChoicesInActiveRound() || latestChoices;
+
+  useEffect(() => {
+    setInternalLoading(false);
+  },[currentChoices]);
 
   return (
     <div className={`round-card ${isLatest ? 'latest-round' : 'past-round'} ${!isActive ? 'inactive-round' : ''}`}>
@@ -71,8 +82,9 @@ const RoundCard: React.FC<RoundCardProps> = ({ round, isLatest, isActive, latest
                   currentChoices[0].is_winner_in_comparison === true ? 'advanced' : 
                   currentChoices[0].is_winner_in_comparison === false ? 'eliminated' : ''
                 }`}
-                disabled={currentChoices[0].is_winner_in_comparison !== null}
+                disabled={currentChoices[0].is_winner_in_comparison !== null || isLoading}
                 onClick={() => {
+                  setInternalLoading(true);
                   onSelectChoice(
                     { major_id: currentChoices[0].major_id, is_winner_in_comparison: true },
                     { major_id: currentChoices[1].major_id, is_winner_in_comparison: false }
@@ -85,6 +97,7 @@ const RoundCard: React.FC<RoundCardProps> = ({ round, isLatest, isActive, latest
                   <h3>{currentChoices[0].major_name}</h3>
                   {currentChoices[0].is_winner_in_comparison === true && <TrophyOutlined style={{ color: '#52c41a' }} />}
                   {currentChoices[0].is_winner_in_comparison === false && <StopOutlined style={{ color: '#ff4d4f' }} />}
+                  {isLoading && <LoadingOutlined />}
                 </div>
                 {choice1Hover && (
                   <div className="description-tooltip">
@@ -102,8 +115,9 @@ const RoundCard: React.FC<RoundCardProps> = ({ round, isLatest, isActive, latest
                   currentChoices[1].is_winner_in_comparison === true ? 'advanced' : 
                   currentChoices[1].is_winner_in_comparison === false ? 'eliminated' : ''
                 }`}
-                disabled={currentChoices[1].is_winner_in_comparison !== null}
+                disabled={currentChoices[1].is_winner_in_comparison !== null || isLoading}
                 onClick={() => {
+                  setInternalLoading(true);
                   onSelectChoice(
                     { major_id: currentChoices[0].major_id, is_winner_in_comparison: false },
                     { major_id: currentChoices[1].major_id, is_winner_in_comparison: true }
@@ -116,6 +130,7 @@ const RoundCard: React.FC<RoundCardProps> = ({ round, isLatest, isActive, latest
                   <h3>{currentChoices[1].major_name}</h3>
                   {currentChoices[1].is_winner_in_comparison === true && <TrophyOutlined style={{ color: '#52c41a' }} />}
                   {currentChoices[1].is_winner_in_comparison === false && <StopOutlined style={{ color: '#ff4d4f' }} />}
+                  {isLoading && <LoadingOutlined />}
                 </div>
                 {choice2Hover && (
                   <div className="description-tooltip">

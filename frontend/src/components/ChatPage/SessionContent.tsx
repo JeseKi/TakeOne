@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { Card, Spin, Modal } from 'antd';
-import { GradientButton } from '@lobehub/ui';
+import { Card, Spin, Modal, message } from 'antd';
+import { GradientButton, Markdown } from '@lobehub/ui';
 
 import {
   GetSessionContent,
@@ -13,16 +13,16 @@ import {
   ChoiceResponse,
   RoundResponse,
   MajorChoice,
-  MajorChoiceRequest
+  MajorChoiceRequest,
+  GetReportResponse
 } from '../../Api';
 import BaseInformationPanel from '../BaseInfomation';
 import RoundList from './RoundList';
-
 import './SessionContent.css';
 
 interface SessionContentProps {
-  accessToken: string;
   session_id: string;
+  accessToken: string;
 }
 
 const SessionContent: React.FC<SessionContentProps> = (props) => {
@@ -33,7 +33,7 @@ const SessionContent: React.FC<SessionContentProps> = (props) => {
   const [rounds, setRounds] = useState<RoundResponse[]>([]);
   const [latestChoices, setLatestChoices] = useState<[ChoiceResponse, ChoiceResponse] | null>(null);
   const [loadingChoices, setLoadingChoices] = useState<boolean>(false);
-  const [report, setReport] = useState<string | null>(null);
+  const [report, setReport] = useState<GetReportResponse | null>(null);
   const [activeRoundIndex, setActiveRoundIndex] = useState<number | undefined>(undefined);
 
   useEffect(() => {
@@ -44,13 +44,33 @@ const SessionContent: React.FC<SessionContentProps> = (props) => {
         setRounds(response.rounds);
         setActiveRoundIndex(response.rounds.length - 1);
       }
+      
+      if (response.report) {
+        setReport(response.report);
+      }
+      
       setLoading(false);
+      
       if (!response.rounds || response.rounds.length === 0) {
         handleGetRound();
       } else {
         const lastRound = response.rounds[response.rounds.length - 1];
         if (lastRound.status === 'ACTIVE') {
-          handleGetChoices();
+          const hasUnselectedPair = lastRound.appearances.filter(
+            a => a.is_winner_in_comparison === null
+          ).length >= 2;
+          
+          const allChoicesMade = lastRound.appearances.every(
+            appearance => appearance.is_winner_in_comparison !== null
+          );
+          
+          if (allChoicesMade || !hasUnselectedPair) {
+            handleGetChoices();
+          }
+        }
+        
+        if (response.status === 'FINISHED' && !response.report) {
+          handleGetReport();
         }
       }
     }).catch((error) => {
@@ -162,20 +182,16 @@ const SessionContent: React.FC<SessionContentProps> = (props) => {
           return newRounds;
         });
         
-        // 清空当前选项，避免重复选择
         setLatestChoices(null);
       }
       
       if (response.generate_type === GenerateType.CHOICES) {
-        // 立即获取新选项
         await handleGetChoices();
       } else if (response.generate_type === GenerateType.ROUND) {
-        // 当前轮次完成，创建新轮次前将当前轮次标记为非活跃
         setActiveRoundIndex(undefined);
         await handleGetRound();
       } else if (response.generate_type === GenerateType.REPORT) {
-        const reportData = await GetReport(session_id, accessToken);
-        setReport(reportData.report);
+        await handleGetReport();
       }
       
       setLoadingChoices(false);
@@ -184,6 +200,34 @@ const SessionContent: React.FC<SessionContentProps> = (props) => {
       setLoadingChoices(false);
     }
   };
+  
+  const handleGetReport = async () => {
+    try {
+      const reportData = await GetReport(session_id, accessToken);
+      console.log('reportData', reportData);
+      setReport(reportData);
+    } catch (error) {
+      console.error('获取报告失败', error);
+      message.error('获取报告失败');
+    }
+  };
+  
+  const renderReport = () => {
+    if (!report) return '';
+    
+    let reportContent = '';
+    
+    reportContent += '### 最终三个专业\n\n';
+    
+    report.final_three_majors.forEach((major, index) => {
+      reportContent += `#### ${major}\n\n${report.final_three_majors_report[index]}\n\n`;
+    });
+    
+    reportContent += '### 最终推荐\n\n';
+    reportContent += report.final_recommendation;
+    
+    return reportContent;
+  };
 
   if (loading) {
     return <div className="loading-container"><Spin size="large" tip="加载中..." /></div>;
@@ -191,13 +235,20 @@ const SessionContent: React.FC<SessionContentProps> = (props) => {
 
   return (
     <div className="session-content">
+      <RoundList
+        rounds={rounds}
+        isLoading={loadingChoices}
+        latestChoices={latestChoices}
+        onSelectChoice={handleSelectChoice}
+        activeRoundIndex={activeRoundIndex}
+      />
+
       <div className="session-header">
         <GradientButton id='base_info_modal_button' onClick={() => setShowModal(true)}>查看基本信息</GradientButton>
         {report && (
           <div className="final-report">
-            <h2>最终结果</h2>
-            <Card className="report-card">
-              <div dangerouslySetInnerHTML={{ __html: report }} />
+            <Card>
+              <Markdown>{renderReport()}</Markdown>
             </Card>
           </div>
         )}
@@ -219,14 +270,6 @@ const SessionContent: React.FC<SessionContentProps> = (props) => {
           />
         )}
       </Modal>
-      
-      <RoundList
-        rounds={rounds}
-        loadingChoices={loadingChoices}
-        latestChoices={latestChoices}
-        onSelectChoice={handleSelectChoice}
-        activeRoundIndex={activeRoundIndex}
-      />
     </div>
   );
 };

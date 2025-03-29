@@ -1,17 +1,19 @@
+from math import log
 import random
 from fastapi import Depends,  HTTPException, APIRouter
 from sqlalchemy.ext.asyncio import AsyncSession
 from loguru import logger
 import asyncio
+import json
 
 from database.crud import (CreateChoice, CreateRound, UpdateRound, create_choices, create_round, 
                            get_session, UpdateChoice, update_choices, update_round, update_session, UpdateSession)
 from database.base import get_db
-from database.models import RoundStatus
+from database.models import RoundStatus, SessionStatus
 from routes.jwt_utils import get_current_user
-from llm import gen_majors_reveal, MajorsReveal
+from llm import gen_majors_reveal, MajorsReveal, gen_wisdom_report
 from schemas import (MajorChoiceRequest, PostChoicesResponse, UserInfo, GetChoicesResponse, 
-                     GetRoundResponse, GenerrateType, ChoiceResponse)
+                     GetRoundResponse, GenerrateType, ChoiceResponse, Report)
 
 majors = {"计算机类", "心理学类", "教育学类", "历史学类", "医学", "文学", "数学类", "物理学类"}
 
@@ -23,9 +25,10 @@ async def post_choices(session_id: str,
                        choices: MajorChoiceRequest,
                        user: UserInfo = Depends(get_current_user), 
                        db: AsyncSession = Depends(get_db)) -> PostChoicesResponse:
+    if session_id in session_lock:
+        raise HTTPException(status_code=409, detail="会话正在处理中，请稍后重试")
+    
     try:
-        if session_id in session_lock:
-            raise HTTPException(status_code=409, detail="会话正在处理中，请稍后重试")
         await asyncio.to_thread(session_lock.add, session_id)
         
         session = await get_session(db, session_id, user.id)
@@ -43,6 +46,11 @@ async def post_choices(session_id: str,
         last_round = updated_session.rounds[-1]
         
         if len(last_round.current_round_majors) == 2 and len(last_round.appearances) == 2:
+            await update_session(db, UpdateSession(session_id=session_id, 
+                                                   current_round_number=last_round.round_number + 1, 
+                                                   status=SessionStatus.FINISHED, 
+                                                   final_major_name=last_round.appearances[-1].major_name if last_round.appearances[-1].is_winner_in_comparison else last_round.appearances[-2].major_name
+                                                   ))
             return PostChoicesResponse(
                 generate_type=GenerrateType.REPORT
             )
@@ -107,8 +115,8 @@ async def get_choices(session_id: str, db: AsyncSession = Depends(get_db), user:
         
         major_name_1, major_name_2 = random.sample(list(unappear_majors), 2)
         
-        # major_reveal = await gen_majors_reveal(session.base_information, major_name_1, major_name_2)
-        major_reveal = MajorsReveal(major_1_description="", major_2_description="") # 测试
+        major_reveal = await gen_majors_reveal(session.base_information, major_name_1, major_name_2)
+        # major_reveal = MajorsReveal(major_1_description="", major_2_description="") # 测试
         
         appearance_index = len(last_round.appearances)
         major_1, major_2 = (
@@ -175,8 +183,8 @@ async def get_round(session_id: str, db: AsyncSession = Depends(get_db), user: U
         await update_session(db, session_update)
         
         major_name_1, major_name_2 = random.sample(list(current_round_majors), 2)
-        # major_reveal = await gen_majors_reveal(base_info, major_name_1, major_name_2)
-        major_reveal = MajorsReveal(major_1_description="", major_2_description="") # 测试
+        major_reveal = await gen_majors_reveal(base_info, major_name_1, major_name_2)
+        # major_reveal = MajorsReveal(major_1_description="", major_2_description="") # 测试
         
         major_1, major_2 = (
             CreateChoice(
@@ -222,9 +230,74 @@ async def get_round(session_id: str, db: AsyncSession = Depends(get_db), user: U
         raise HTTPException(status_code=500, detail="Internal Server Error")
     finally:
         await asyncio.to_thread(session_lock.remove, session_id)
-
-@options_router.get("/gen_report/{session_id}")
-async def gen_report(session_id: str, user: UserInfo = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+        
+@options_router.get("/gen_report/{session_id}", response_model=Report)
+async def gen_report(session_id: str, user: UserInfo = Depends(get_current_user), db: AsyncSession = Depends(get_db)) -> Report:
     """生成最终的报告"""
-    # TODO: 生成最终的报告
-    pass
+    logger.info(f"生成用户 {user.id} 的会话 {session_id} 的最终报告")
+    
+    session = await get_session(db, session_id, user.id)
+    
+    if session.status != SessionStatus.FINISHED:
+        raise HTTPException(status_code=400, detail="会话未完成，无法生成报告")
+    
+    final_majors = []
+    seen_majors = set()
+    
+    for round in reversed(session.rounds):
+        if len(final_majors) >= 3:
+            break
+        
+        for appearance in round.appearances:
+            if appearance.is_winner_in_comparison == True and appearance.major_name not in seen_majors:
+                final_majors.append(appearance.major_name)
+                seen_majors.add(appearance.major_name)
+                
+                if len(final_majors) >= 3:
+                    break
+    
+    logger.debug(f"final_majors: {final_majors}")
+    
+    if len(final_majors) < 3:
+        raise HTTPException(status_code=400, detail="没有足够的胜出专业来生成报告")
+    
+    try:
+        base_info_dict: dict[str, str] = json.loads(session.base_information)
+    except json.JSONDecodeError as e:
+        logger.error(f"解析base_information失败: {e}")
+        raise HTTPException(status_code=500, detail="解析用户基本信息失败")
+    
+    logger.debug(f"base_info_dict: {base_info_dict}")
+    
+    student_info = "\n".join([
+        f"- 父母可供的大学生活费上限: {base_info_dict.get('max_living_expenses_from_parents', '未知')}",
+        f"- 当前积蓄是否足够: {base_info_dict.get('enough_savings_for_college', '未知')}",
+        f"- 零花钱用途: {base_info_dict.get('pocket_money_usage', '未知')}",
+        f"- 愿意为了金钱再读高三: {base_info_dict.get('willing_to_repeat_high_school_for_money', '未知')}",
+        f"- 居住在几线城市: {base_info_dict.get('city_tier', '未知')}",
+        f"- 父母是否体制内: {base_info_dict.get('parents_in_public_sector', '未知')}",
+        f"- 是否有稳定爱好: {base_info_dict.get('has_stable_hobby', '未知')}",
+        f"- 高考后是否有自主学习习惯: {base_info_dict.get('self_learning_after_gaokao', '未知')}",
+        f"- 是否主动参加竞赛: {base_info_dict.get('proactive_in_competitions', '未知')}",
+        f"- 是否喜欢阅读课外书: {base_info_dict.get('likes_reading_extracurricular_books', '未知')}"
+    ])
+    
+    try:
+        wisdom_report = await gen_wisdom_report(student_info, final_majors)
+        logger.debug(f"wisdom_report: {wisdom_report}")
+        report = Report(
+            final_three_majors=wisdom_report.final_three_majors,
+            final_three_majors_report=wisdom_report.final_three_majors_report,
+            final_recommendation=wisdom_report.final_recommendation
+        )
+        
+        await update_session(db, UpdateSession(session_id=session_id, current_round_number=session.current_round_number, report=report))
+        
+        return Report(
+            final_three_majors=wisdom_report.final_three_majors,
+            final_three_majors_report=wisdom_report.final_three_majors_report,
+            final_recommendation=wisdom_report.final_recommendation
+        )
+    except Exception as e:
+        logger.error(f"生成报告时发生错误: {e}")
+        raise HTTPException(status_code=500, detail=f"生成报告失败: {str(e)}")

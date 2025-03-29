@@ -1,6 +1,6 @@
-from typing import List
 import uuid
 import enum
+from typing import List
 from sqlalchemy import (
     Integer, String, Boolean, Enum as SqlEnum,
     ForeignKey, Text
@@ -9,6 +9,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.dialects.sqlite import JSON
 
 from .base import Base
+from schemas import BaseInformation, Report
 
 class SessionStatus(str, enum.Enum):
     ONGOING = "ongoing"
@@ -67,11 +68,12 @@ class Session(Base):
 
     uuid: Mapped[str] = mapped_column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
     user_id: Mapped[str] = mapped_column(String, index=True, nullable=False)
-    base_information: Mapped[dict] = mapped_column(JSON, nullable=False)
+    base_information: Mapped[BaseInformation] = mapped_column(JSON, nullable=False)
     status: Mapped[SessionStatus] = mapped_column(SqlEnum(SessionStatus, name="session_status_enum"),
                                                   default=SessionStatus.ONGOING, nullable=False, index=True)
     current_round_number: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
     final_major_name: Mapped[str | None] = mapped_column(String, nullable=True, default=None)
+    report: Mapped[Report | None] = mapped_column(JSON, nullable=True, default=None)
 
     rounds: Mapped[List["Round"]] = relationship(
         "Round",

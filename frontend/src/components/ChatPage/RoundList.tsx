@@ -3,10 +3,11 @@ import React from 'react';
 import { Spin } from 'antd';
 import RoundCard from './RoundCard';
 import { RoundResponse, ChoiceResponse, MajorChoice } from '../../Api';
+import './RoundList.css';
 
 interface RoundListProps {
   rounds: RoundResponse[];
-  loadingChoices: boolean;
+  isLoading: boolean;
   latestChoices: [ChoiceResponse, ChoiceResponse] | null;
   onSelectChoice: (choice1: MajorChoice, choice2: MajorChoice) => void;
   activeRoundIndex?: number;
@@ -14,9 +15,9 @@ interface RoundListProps {
 
 const RoundList: React.FC<RoundListProps> = ({ 
   rounds, 
-  loadingChoices, 
+  isLoading, 
   latestChoices, 
-  onSelectChoice,
+  onSelectChoice, 
   activeRoundIndex 
 }) => {
   return (
@@ -29,10 +30,11 @@ const RoundList: React.FC<RoundListProps> = ({
           isActive={activeRoundIndex === undefined ? index === rounds.length - 1 : index === activeRoundIndex}
           onSelectChoice={onSelectChoice}
           latestChoices={index === rounds.length - 1 ? latestChoices : null}
+          isLoading={isLoading}
         />
       ))}
       
-      {loadingChoices && (
+      {isLoading && (
         <div className="loading-choices">
           <Spin tip="加载中..." />
         </div>

@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import List, Optional, Tuple
+from typing import List, Optional, Tuple, final
 from pydantic import BaseModel
 
 class GenerrateType(Enum):
@@ -59,12 +59,18 @@ class RoundResponse(BaseModel):
     current_round_majors: List[str]
     appearances: List[ChoiceResponse]
     
+class Report(BaseModel):
+    final_three_majors: List[str]
+    final_three_majors_report: List[str]
+    final_recommendation: str
+    
 class SessionResponse(BaseModel):
     base_information: BaseInformation
     status: str
     current_round_number: int
     final_major_name: Optional[str] = None
     rounds: List[RoundResponse]
+    report: Optional[Report] = None
     
 class PostChoicesResponse(BaseModel):
     generate_type: GenerrateType
@@ -76,6 +82,3 @@ class GetRoundResponse(BaseModel):
     current_round_number: int
     current_round_majors: List[str]
     choices: Tuple[ChoiceResponse, ChoiceResponse]
-    
-class GetReportResponse(BaseModel):
-    report: str

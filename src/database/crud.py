@@ -1,5 +1,5 @@
+import asyncio
 from typing import List, Set, Tuple
-from uuid import uuid4
 from sqlalchemy import select
 from sqlalchemy.orm import joinedload
 from sqlalchemy.exc import SQLAlchemyError
@@ -9,8 +9,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from pydantic import BaseModel
 
 from loguru import logger
-from database.models import ChoiceAppearance, Session, Round, RoundStatus
-from schemas import BaseInformation
+from database.models import ChoiceAppearance, Session, Round, RoundStatus, SessionStatus
+from schemas import BaseInformation, Report
+from common import timeout
 
 class CreateSession(BaseModel):
     user_id: str
@@ -20,6 +21,8 @@ class UpdateSession(BaseModel):
     session_id: str
     current_round_number: int
     final_major_name: str | None = None
+    status: SessionStatus | None = SessionStatus.ONGOING
+    report: Report | None = None
     
 class CreateRound(BaseModel):
     session_id: str
@@ -48,6 +51,7 @@ class CreateReport(BaseModel):
     
 ### CRUD
 
+@timeout()
 async def create_session(db: AsyncSession, session: CreateSession) -> Session:
     try:
         new_session = Session(
@@ -66,6 +70,7 @@ async def create_session(db: AsyncSession, session: CreateSession) -> Session:
     finally:
         await db.close()
 
+@timeout()
 async def get_session(db: AsyncSession, session_id: str, user_id: str) -> Session:
     try:
         query = (
@@ -86,6 +91,7 @@ async def get_session(db: AsyncSession, session_id: str, user_id: str) -> Sessio
     finally:
         await db.close()
 
+@timeout()
 async def get_sessions(db: AsyncSession, user_id: str) -> List[str]:
     try:
         query = select(Session).where(Session.user_id == user_id)
@@ -101,6 +107,7 @@ async def get_sessions(db: AsyncSession, user_id: str) -> List[str]:
     finally:
         await db.close()
         
+@timeout()
 async def update_session(db: AsyncSession, session_update: UpdateSession) -> Session:
     try:
         query = select(Session).where(Session.uuid == session_update.session_id)
@@ -111,6 +118,9 @@ async def update_session(db: AsyncSession, session_update: UpdateSession) -> Ses
         
         session.current_round_number = session_update.current_round_number
         session.final_major_name = session_update.final_major_name
+        session.status = session_update.status
+        if session_update.report:
+            session.report = session_update.report.model_dump()
         db.add(session)
         await db.commit()
         await db.refresh(session)
@@ -122,6 +132,7 @@ async def update_session(db: AsyncSession, session_update: UpdateSession) -> Ses
     finally:
         await db.close()
 
+@timeout()
 async def create_round(db: AsyncSession, round: CreateRound) -> Round:
     try:
         current_round_majors_list = list(round.current_round_majors)
@@ -142,7 +153,8 @@ async def create_round(db: AsyncSession, round: CreateRound) -> Round:
         raise HTTPException(status_code=500, detail=f"数据库错误: {str(e)}")
     finally:
         await db.close()
-        
+
+@timeout()
 async def update_round(db: AsyncSession, round_update: UpdateRound) -> Round:
     try:
         query = select(Round).where(Round.uuid == round_update.round_id)
@@ -163,6 +175,7 @@ async def update_round(db: AsyncSession, round_update: UpdateRound) -> Round:
     finally:
         await db.close()
 
+@timeout()
 async def create_choices(db: AsyncSession, choices: Tuple[CreateChoice, CreateChoice], user_id: str) -> Tuple[ChoiceAppearance, ChoiceAppearance]:
     new_choices = []
     try:
@@ -194,6 +207,7 @@ async def create_choices(db: AsyncSession, choices: Tuple[CreateChoice, CreateCh
     finally:
         await db.close()
 
+@timeout()
 async def update_choices(db: AsyncSession, new_choices: Tuple[UpdateChoice, UpdateChoice]) -> ChoiceAppearance:
     updated_choices = []
     try:
@@ -212,26 +226,6 @@ async def update_choices(db: AsyncSession, new_choices: Tuple[UpdateChoice, Upda
         for choice in updated_choices:
             await db.refresh(choice)
         return updated_choices
-    except SQLAlchemyError as e:
-        await db.rollback()
-        logger.error(f"数据库错误:{str(e)}")
-        raise HTTPException(status_code=500, detail=f"数据库错误: {str(e)}")
-    finally:
-        await db.close()
-
-async def create_report(db: AsyncSession, report: CreateReport):
-    try:
-        pass
-    except SQLAlchemyError as e:
-        await db.rollback()
-        logger.error(f"数据库错误:{str(e)}")
-        raise HTTPException(status_code=500, detail=f"数据库错误: {str(e)}")
-    finally:
-        await db.close()
-
-async def delete_session(db: AsyncSession, session_id: str):
-    try:
-        pass
     except SQLAlchemyError as e:
         await db.rollback()
         logger.error(f"数据库错误:{str(e)}")

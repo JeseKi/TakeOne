@@ -1,7 +1,7 @@
 import axios from "axios";
 import { config } from "./config";
 
-interface TokenResponse {
+export interface TokenResponse {
     access_token: string;
     refresh_token: string;
     id_token: string;
@@ -10,7 +10,7 @@ interface TokenResponse {
     expires_in: number;
   }
 
-interface UserInfoResponse {
+export interface UserInfoResponse {
     id: string;
     name: string;
     displayName: string;
@@ -18,7 +18,7 @@ interface UserInfoResponse {
     preferredUsername: string;
 }
 
-interface BaseInformation {
+export interface BaseInformation {
     max_living_expenses_from_parents: string | '';
     enough_savings_for_college: string | '';
     pocket_money_usage: string | '';
@@ -31,7 +31,6 @@ interface BaseInformation {
     likes_reading_extracurricular_books: string | '';
 }
 
-// 新增专业选择相关的接口
 export enum GenerateType {
     CHOICES = "choices",
     REPORT = "report",
@@ -77,20 +76,10 @@ export interface GetRoundResponse {
 }
 
 export interface GetReportResponse {
-    report: string;
+    final_three_majors: string[];
+    final_three_majors_report: string[];
+    final_recommendation: string;
 }
-
-// 修改原有接口名称避免冲突
-// interface MajorInfo {
-//     name: string;
-//     description: string;
-//     is_chosen: boolean;
-// }
-// 
-// interface MajorPair {
-//     major_a: MajorInfo;
-//     major_b: MajorInfo;
-// }
 
 interface MajorChoiceResult {
     name: string;
@@ -98,7 +87,7 @@ interface MajorChoiceResult {
     appearance_order: number[];
 }
 
-interface SessionContentResponse {
+export interface SessionContentResponse {
     base_information: BaseInformation;
     major_choices_result: MajorChoiceResult[];
     chosen_sequence: number[];
@@ -106,6 +95,7 @@ interface SessionContentResponse {
     current_round_number?: number;
     status?: string;
     final_major_name?: string;
+    report?: GetReportResponse;
 }
 
 export class MissingFieldsError extends Error {
@@ -303,4 +293,3 @@ const PostBaseInformation = async (data: BaseInformation, accessToken: string): 
 }
 
 export { GetLoginUrl , GetTokenResponse , GetUserInfo , PostBaseInformation , GetSessionsID , GetSessionContent, GetChoices, PostChoices, GetRound, GetReport };
-export type { TokenResponse , UserInfoResponse , BaseInformation , SessionContentResponse };

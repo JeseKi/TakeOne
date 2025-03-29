@@ -69,6 +69,7 @@ async def session_get(session_id: str, user: UserInfo = Depends(get_current_user
         status = session.status
         current_round_number = session.current_round_number
         final_major_name = session.final_major_name
+        report = session.report
         rounds = []
         for round in session.rounds:
             appearances = []
@@ -96,7 +97,8 @@ async def session_get(session_id: str, user: UserInfo = Depends(get_current_user
             status=status,
             current_round_number=current_round_number,
             final_major_name=final_major_name,
-            rounds=rounds
+            rounds=rounds,
+            report=report
         )
         
         logger.debug(f"Session {session_id} retrieved successfully: {session_response}")
