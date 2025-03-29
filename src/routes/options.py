@@ -18,19 +18,14 @@ from schemas import (MajorChoiceRequest, PostChoicesResponse, UserInfo, GetChoic
 majors = {"计算机类", "心理学类", "教育学类", "历史学类", "医学", "文学", "数学类", "物理学类"}
 
 options_router = APIRouter()
-session_lock = set()
 
 @options_router.post("/post_choices/{session_id}", response_model=PostChoicesResponse)
 async def post_choices(session_id: str, 
                        choices: MajorChoiceRequest,
                        user: UserInfo = Depends(get_current_user), 
                        db: AsyncSession = Depends(get_db)) -> PostChoicesResponse:
-    if session_id in session_lock:
-        raise HTTPException(status_code=409, detail="会话正在处理中，请稍后重试")
     
     try:
-        await asyncio.to_thread(session_lock.add, session_id)
-        
         session = await get_session(db, session_id, user.id)
         
         if len(session.rounds) == 0 and choices.choices == None:
@@ -159,8 +154,6 @@ async def get_choices(session_id: str, db: AsyncSession = Depends(get_db), user:
     except Exception as e:
         logger.error(f"Error: {e}")
         raise HTTPException(status_code=500, detail="Internal Server Error")
-    finally:
-        await asyncio.to_thread(session_lock.remove, session_id)
     
 @options_router.get("/get_round/{session_id}", response_model=GetRoundResponse)
 async def get_round(session_id: str, db: AsyncSession = Depends(get_db), user: UserInfo = Depends(get_current_user)) -> GetRoundResponse:
@@ -228,8 +221,6 @@ async def get_round(session_id: str, db: AsyncSession = Depends(get_db), user: U
     except Exception as e:
         logger.error(f"Error: {e}")
         raise HTTPException(status_code=500, detail="Internal Server Error")
-    finally:
-        await asyncio.to_thread(session_lock.remove, session_id)
         
 @options_router.get("/gen_report/{session_id}", response_model=Report)
 async def gen_report(session_id: str, user: UserInfo = Depends(get_current_user), db: AsyncSession = Depends(get_db)) -> Report:

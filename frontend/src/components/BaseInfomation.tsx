@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { TextArea, GradientButton , Alert } from '@lobehub/ui';
+import { Spin } from 'antd';
+import { LoadingOutlined } from '@ant-design/icons';
 
 import { BaseInformation , MissingFieldsError, PostBaseInformation } from '../Api';
 import { useNavigate } from 'react-router-dom';
@@ -15,6 +17,7 @@ const BaseInformationPanel: React.FC<BaseInformationProps> = (props: BaseInforma
   const navigate = useNavigate();
   const [alertMessage, setAlertMessage] = useState<string | null>(null);
   const [showAlert, setShowAlert] = useState<boolean>(false);
+  const [loading, setLoading] = useState<boolean>(false);
   const [formData, setFormData] = useState<BaseInformation>(() => {
 
   if (base_information !== null) {
@@ -45,7 +48,7 @@ const BaseInformationPanel: React.FC<BaseInformationProps> = (props: BaseInforma
   };
 
   const handleSubmit = async () => {
-
+    setLoading(true);
     try {
       const session_uuid = await PostBaseInformation(formData, accessToken);
       console.log('提交成功:', formData);
@@ -57,6 +60,8 @@ const BaseInformationPanel: React.FC<BaseInformationProps> = (props: BaseInforma
       } else {
         console.error('提交失败:', error)
       }
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -70,8 +75,10 @@ const BaseInformationPanel: React.FC<BaseInformationProps> = (props: BaseInforma
 		}
 	};
 
+  const antIcon = <LoadingOutlined style={{ fontSize: 24 }} spin />;
+
   return (
-    <>
+    <div style={{ width: '30%' , margin: '0 auto' }}>
       {showAlert && alertMessage && (
           <Alert
               type='info'
@@ -161,11 +168,11 @@ const BaseInformationPanel: React.FC<BaseInformationProps> = (props: BaseInforma
       />
 
       {base_information === null && 
-        <GradientButton onClick={handleCommitEvent} htmlType="submit">
-        提交
+        <GradientButton onClick={handleCommitEvent} htmlType="submit" disabled={loading}>
+          {loading ? <Spin indicator={antIcon} /> : '提交'}
         </GradientButton>
       }
-    </>
+    </div>
   );
 }
 

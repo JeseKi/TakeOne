@@ -45,9 +45,7 @@ const SessionContent: React.FC<SessionContentProps> = (props) => {
         setActiveRoundIndex(response.rounds.length - 1);
       }
       
-      if (response.report) {
-        setReport(response.report);
-      }
+      setReport(response.report || null);
       
       setLoading(false);
       
@@ -234,7 +232,7 @@ const SessionContent: React.FC<SessionContentProps> = (props) => {
   }
 
   return (
-    <div className="session-content">
+    <div>
       <RoundList
         rounds={rounds}
         isLoading={loadingChoices}

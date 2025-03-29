@@ -1,4 +1,3 @@
-import asyncio
 from typing import List, Set, Tuple
 from sqlalchemy import select
 from sqlalchemy.orm import joinedload

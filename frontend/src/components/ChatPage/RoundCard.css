@@ -114,7 +114,6 @@
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
     z-index: 100;
     text-align: left;
-    font-size: 14px;
 }
 
 .appearance-item {
@@ -164,6 +163,7 @@
     color: #666;
     margin: 0;
     line-height: 1.5;
+    z-index: 100;
 }
 
 .info-section {
