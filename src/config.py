@@ -1,15 +1,17 @@
-import json
+import os
 
-config = json.load(open("config.json"))
+from dotenv import load_dotenv
+load_dotenv("../.env")  # 显式加载 .env 文件
 
-BASE_URL = config["base_url"]
-API_KEY = config["api_key"]
-MODEL = config["model"]
-SECRET_KEY = config["secret_key"]
-CASDOOR_ENDPOINT = config["casdoor_endpoint"]
-CASDOOR_CLIENT_ID = config["casdoor_client_id"]
-CASDOOR_CLIENT_SECRET = config["casdoor_client_secret"]
-CASDOOR_REDIRECT_URI = config["casdoor_redirect_uri"]
-CASDOOR_TOKEN_ENDPOINT = config["casdoor_token_endpoint"]
-CASDOOR_APP_NAME = config["casdoor_app_name"]
-CASDOOR_ORGANIZATION_NAME = config["casdoor_organization_name"]
+BASE_URL: str = os.environ.get("BASE_URL")
+API_KEY: str = os.environ.get("API_KEY")
+MODEL: str = os.environ.get("MODEL")
+SECRET_KEY: str = os.environ.get("SECRET_KEY")
+CASDOOR_ENDPOINT: str = os.environ.get("CASDOOR_ENDPOINT")
+CASDOOR_CLIENT_ID: str = os.environ.get("CASDOOR_CLIENT_ID")
+CASDOOR_CLIENT_SECRET: str = os.environ.get("CASDOOR_CLIENT_SECRET")
+CASDOOR_REDIRECT_URI: str = os.environ.get("CASDOOR_REDIRECT_URI")
+CASDOOR_TOKEN_ENDPOINT: str = os.environ.get("CASDOOR_TOKEN_ENDPOINT")
+CASDOOR_APP_NAME: str = os.environ.get("CASDOOR_APP_NAME")
+CASDOOR_ORGANIZATION_NAME: str = os.environ.get("CASDOOR_ORGANIZATION_NAME")
+ALLOW_ORIGINS: list[str] = os.environ.get("ALLOW_ORIGINS", "*").split(",")
