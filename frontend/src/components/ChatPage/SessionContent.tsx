@@ -18,7 +18,6 @@ import {
 } from '../../Api';
 import BaseInformationPanel from '../BaseInfomation';
 import RoundList from './RoundList';
-import './SessionContent.css';
 
 interface SessionContentProps {
   session_id: string;
@@ -228,11 +227,11 @@ const SessionContent: React.FC<SessionContentProps> = (props) => {
   };
 
   if (loading) {
-    return <div className="loading-container"><Spin size="large" tip="加载中..." /></div>;
+    return <div className="flex justify-center items-center h-screen w-full"><Spin size="large" tip="加载中..." /></div>;
   }
 
   return (
-    <div>
+    <div className="p-5 w-full max-w-[1000px] mx-auto">
       <RoundList
         rounds={rounds}
         isLoading={loadingChoices}
@@ -241,11 +240,16 @@ const SessionContent: React.FC<SessionContentProps> = (props) => {
         activeRoundIndex={activeRoundIndex}
       />
 
-      <div className="session-header">
-        <GradientButton id='base_info_modal_button' onClick={() => setShowModal(true)}>查看基本信息</GradientButton>
+      <div className="w-full flex flex-col items-center">
+        <GradientButton 
+          onClick={() => setShowModal(true)}
+          className="fixed right-[15%] top-[1%] z-10"
+        >
+          查看基本信息
+        </GradientButton>
         {report && (
-          <div className="final-report">
-            <Card>
+          <div className="mb-24 w-full md:w-3/4 lg:w-1/2 shadow-md">
+            <Card className="text-left">
               <Markdown>{renderReport()}</Markdown>
             </Card>
           </div>

@@ -15,7 +15,11 @@ function Login() {
       redirectToLogin();
     }, []);
   
-    return <div>正在重定向到登录页面...</div>;
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <div className="text-lg font-medium animate-pulse">正在重定向到登录页面...</div>
+      </div>
+    );
   }
 
 export default Login;

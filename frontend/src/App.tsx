@@ -1,5 +1,4 @@
 import { Navigate, Route, Routes } from 'react-router-dom';
-import './App.css'
 import { useEffect, useState } from 'react';
 
 import BaseInformationPanel from './components/BaseInfomation';
@@ -38,26 +37,28 @@ function App() {
   }, [accessToken]);
 
   if (isChecking) {
-    return <div>正在检查认证状态...</div>;
+    return <div className="flex justify-center items-center min-h-screen text-lg">正在检查认证状态...</div>;
   }
 
   return (
-    <Routes>
-      <Route path="/login" element={<Login />} />
-      <Route path="/callback" element={<Callback />} />
-      {isAuthenticated ? (
-        <>
-          <Route path="/" element={<Chat accessToken={accessToken} />} />
-          <Route
-            path="/base_information"
-            element={<BaseInformationPanel accessToken={accessToken} base_information={null} submit_event={undefined} />}
-          />
-          <Route path="/chat/*" element={<Chat accessToken={accessToken} />} />
-        </>
-      ) : (
-        <Route path="*" element={<Navigate to="/login" replace />} />
-      )}
-    </Routes>
+    <div className="w-full mx-auto text-center">
+      <Routes>
+        <Route path="/login" element={<Login />} />
+        <Route path="/callback" element={<Callback />} />
+        {isAuthenticated ? (
+          <>
+            <Route path="/" element={<Chat accessToken={accessToken} />} />
+            <Route
+              path="/base_information"
+              element={<BaseInformationPanel accessToken={accessToken} base_information={null} submit_event={undefined} />}
+            />
+            <Route path="/chat/*" element={<Chat accessToken={accessToken} />} />
+          </>
+        ) : (
+          <Route path="*" element={<Navigate to="/login" replace />} />
+        )}
+      </Routes>
+    </div>
   );
 }
 

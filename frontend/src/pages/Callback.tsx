@@ -47,15 +47,29 @@ const Callback: React.FC = () => {
 
   if (loading) {
     return (
-      <div>
-        <h2>正在处理登录回调...</h2>
-        <p>请稍候，正在验证身份并获取用户信息...</p>
+      <div className="flex flex-col justify-center items-center min-h-screen">
+        <h2 className="text-xl font-semibold mb-2">正在处理登录回调...</h2>
+        <p className="text-gray-600 dark:text-gray-300">请稍候，正在验证身份并获取用户信息...</p>
+        <div className="mt-4 w-16 h-16 border-t-4 border-blue-500 border-solid rounded-full animate-spin"></div>
       </div>
     );
   }
 
   if (error) {
-    return <div>Error: {error}</div>;
+    return (
+      <div className="flex flex-col justify-center items-center min-h-screen">
+        <div className="p-4 mb-4 text-red-700 bg-red-100 dark:bg-red-900 dark:text-red-100 rounded-lg max-w-md">
+          <h3 className="text-lg font-medium mb-2">登录错误</h3>
+          <p>{error}</p>
+          <button 
+            className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+            onClick={() => navigate('/login')}
+          >
+            返回登录
+          </button>
+        </div>
+      </div>
+    );
   }
 
   return null;

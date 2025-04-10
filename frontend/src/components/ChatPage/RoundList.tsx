@@ -3,7 +3,6 @@ import React from 'react';
 import { Spin } from 'antd';
 import RoundCard from './RoundCard';
 import { RoundResponse, ChoiceResponse, MajorChoice } from '../../Api';
-import './RoundList.css';
 
 interface RoundListProps {
   rounds: RoundResponse[];
@@ -21,7 +20,7 @@ const RoundList: React.FC<RoundListProps> = ({
   activeRoundIndex 
 }) => {
   return (
-    <div className="rounds-container">
+    <div className="p-5 w-full max-w-[1000px] mx-auto">
       {rounds.map((round, index) => (
         <RoundCard
           key={index}
@@ -35,7 +34,7 @@ const RoundList: React.FC<RoundListProps> = ({
       ))}
       
       {isLoading && (
-        <div className="loading-choices">
+        <div className="flex justify-center py-7">
           <Spin tip="加载中..." />
         </div>
       )}

@@ -75,102 +75,115 @@ const BaseInformationPanel: React.FC<BaseInformationProps> = (props: BaseInforma
 		}
 	};
 
-  const antIcon = <LoadingOutlined style={{ fontSize: 24 }} spin />;
+  const antIcon = <LoadingOutlined className="text-2xl" spin />;
 
   return (
-    <div style={{ width: '30%' , margin: '0 auto' }}>
+    <div className="w-[80%] max-w-4xl mx-auto px-4 py-6">
       {showAlert && alertMessage && (
           <Alert
               type='info'
               message={alertMessage}
               closable
               onClose={() => setShowAlert(false)}
+              className="mb-4"
           />
       )}
-      <h3>💰️父母可供的大学生活费上限是多少？</h3>
+      <h3 className="text-lg font-medium mb-2">💰️父母可供的大学生活费上限是多少？</h3>
       <TextArea
         name="max_living_expenses_from_parents"
         value={formData.max_living_expenses_from_parents}
         onChange={handleChange}
         readOnly={base_information !== null}
+        className="mb-4 w-full h-auto min-h-[100px]"
       />
 
-      <h3>💰️当前积蓄是否可能不贷款供完大学四年的生活费？</h3>
+      <h3 className="text-lg font-medium mb-2">💰️当前积蓄是否可能不贷款供完大学四年的生活费？</h3>
       <TextArea
         name="enough_savings_for_college"
         value={formData.enough_savings_for_college}
         onChange={handleChange}
         readOnly={base_information !== null}
+        className="mb-4 w-full h-auto min-h-[100px]"
       />
 
-      <h3>💰️你平时的零花钱的用途是什么？</h3>
+      <h3 className="text-lg font-medium mb-2">💰️你平时的零花钱的用途是什么？</h3>
       <TextArea 
         name="pocket_money_usage" 
         value={formData.pocket_money_usage} 
         onChange={handleChange} 
         readOnly={base_information !== null}
+        className="mb-4 w-full h-auto min-h-[100px]"
       />
 
-      <h3>💰️假如让你再读三年高三，每年都会给你的家庭免费的十万人民币，你愿意吗？</h3>
+      <h3 className="text-lg font-medium mb-2">💰️假如让你再读三年高三，每年都会给你的家庭免费的十万人民币，你愿意吗？</h3>
       <TextArea
         name="willing_to_repeat_high_school_for_money"
         value={formData.willing_to_repeat_high_school_for_money}
         onChange={handleChange}
         readOnly={base_information !== null}
+        className="mb-4 w-full h-auto min-h-[100px]"
       />
 
-      <h3>🏙主要居住地区是几线城市？</h3>
+      <h3 className="text-lg font-medium mb-2">🏙主要居住地区是几线城市？</h3>
       <TextArea 
         name="city_tier" 
         value={formData.city_tier} 
         onChange={handleChange} 
         readOnly={base_information !== null}
+        className="mb-4 w-full h-auto min-h-[100px]"
       />
 
-      <h3>👨👩父母是否属于体制内？</h3>
+      <h3 className="text-lg font-medium mb-2">👨👩父母是否属于体制内？</h3>
       <TextArea
         name="parents_in_public_sector"
         value={formData.parents_in_public_sector}
         onChange={handleChange}
         readOnly={base_information !== null}
+        className="mb-4 w-full h-auto min-h-[100px]"
       />
 
-      <h3>🤩是否有稳定的爱好？</h3>
+      <h3 className="text-lg font-medium mb-2">🤩是否有稳定的爱好？</h3>
       <TextArea 
         name="has_stable_hobby" 
         value={formData.has_stable_hobby} 
         onChange={handleChange} 
         readOnly={base_information !== null}
+        className="mb-4 w-full h-auto min-h-[100px]"
       />
 
-      <h3>📚️在高考完后的这段时间，是否有每天自主学习的习惯？</h3>
+      <h3 className="text-lg font-medium mb-2">📚️在高考完后的这段时间，是否有每天自主学习的习惯？</h3>
       <TextArea
         name="self_learning_after_gaokao"
         value={formData.self_learning_after_gaokao}
         onChange={handleChange}
         readOnly={base_information !== null}
+        className="mb-4 w-full h-auto min-h-[100px]"
       />
 
-      <h3>🏁是否主动参加过竞赛？</h3>
+      <h3 className="text-lg font-medium mb-2">🏁是否主动参加过竞赛？</h3>
       <TextArea
         name="proactive_in_competitions"
         value={formData.proactive_in_competitions}
         onChange={handleChange}
         readOnly={base_information !== null}
+        className="mb-4 w-full h-auto min-h-[100px]"
       />
 
-      <h3>📙平时是否喜欢阅读课外书？</h3>
+      <h3 className="text-lg font-medium mb-2">📙平时是否喜欢阅读课外书？</h3>
       <TextArea
         name="likes_reading_extracurricular_books"
         value={formData.likes_reading_extracurricular_books}
         onChange={handleChange}
         readOnly={base_information !== null}
+        className="mb-4 w-full h-auto min-h-[100px]"
       />
 
       {base_information === null && 
-        <GradientButton onClick={handleCommitEvent} htmlType="submit" disabled={loading}>
-          {loading ? <Spin indicator={antIcon} /> : '提交'}
-        </GradientButton>
+        <div className="mt-6 mb-10 flex justify-center">
+          <GradientButton onClick={handleCommitEvent} htmlType="submit" disabled={loading} className="px-8 py-2">
+            {loading ? <Spin indicator={antIcon} /> : '提交'}
+          </GradientButton>
+        </div>
       }
     </div>
   );
