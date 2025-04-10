@@ -4,6 +4,7 @@ from sqlalchemy.orm import joinedload
 from sqlalchemy.exc import SQLAlchemyError
 from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
+import uuid
 
 from pydantic import BaseModel
 
@@ -54,6 +55,7 @@ class CreateReport(BaseModel):
 async def create_session(db: AsyncSession, session: CreateSession) -> Session:
     try:
         new_session = Session(
+            uuid=str(uuid.uuid4()),  # 手动设置UUID
             user_id=session.user_id, 
             base_information=session.base_information.model_dump_json(),
             final_major_name=None
@@ -70,7 +72,7 @@ async def create_session(db: AsyncSession, session: CreateSession) -> Session:
         await db.close()
 
 @timeout()
-async def get_session(db: AsyncSession, session_id: str, user_id: str) -> Session:
+async def get_session(db: AsyncSession, session_id: str, user_id: str, transaction=None) -> Session:
     try:
         query = (
             select(Session).
@@ -86,9 +88,13 @@ async def get_session(db: AsyncSession, session_id: str, user_id: str) -> Sessio
         return session
     except SQLAlchemyError as e:
         logger.error(f"数据库错误:{str(e)}")
-        await db.rollback()
+        if transaction is None:
+            await db.rollback()
+        raise
     finally:
-        await db.close()
+        # 只有在没有外部事务的情况下才关闭连接
+        if transaction is None:
+            await db.close()
 
 @timeout()
 async def get_sessions(db: AsyncSession, user_id: str) -> List[str]:
@@ -107,7 +113,7 @@ async def get_sessions(db: AsyncSession, user_id: str) -> List[str]:
         await db.close()
         
 @timeout()
-async def update_session(db: AsyncSession, session_update: UpdateSession) -> Session:
+async def update_session(db: AsyncSession, session_update: UpdateSession, transaction=None) -> Session:
     try:
         query = select(Session).where(Session.uuid == session_update.session_id)
         result = await db.execute(query)
@@ -121,40 +127,55 @@ async def update_session(db: AsyncSession, session_update: UpdateSession) -> Ses
         if session_update.report:
             session.report = session_update.report.model_dump()
         db.add(session)
-        await db.commit()
-        await db.refresh(session)
+        
+        # 只有在没有外部事务的情况下才提交
+        if transaction is None:
+            await db.commit()
+            await db.refresh(session)
         return session
     except SQLAlchemyError as e:
-        await db.rollback()
+        # 只有在没有外部事务的情况下才回滚
+        if transaction is None:
+            await db.rollback()
         logger.error(f"数据库错误:{str(e)}")
         raise HTTPException(status_code=500, detail=f"数据库错误: {str(e)}")
     finally:
-        await db.close()
+        # 只有在没有外部事务的情况下才关闭连接
+        if transaction is None:
+            await db.close()
 
 @timeout()
-async def create_round(db: AsyncSession, round: CreateRound) -> Round:
+async def create_round(db: AsyncSession, round: CreateRound, transaction=None) -> Round:
     try:
         current_round_majors_list = list(round.current_round_majors)
         
         new_round = Round(
+            uuid=str(uuid.uuid4()),  # 手动设置UUID
             session_id=round.session_id,
             round_number=round.round_number,
             current_round_majors=current_round_majors_list
         )
         db.add(new_round)
-        await db.commit()
-        await db.refresh(new_round)
+        
+        # 只有在没有外部事务的情况下才提交
+        if transaction is None:
+            await db.commit()
+            await db.refresh(new_round)
         
         return new_round
     except Exception as e:
-        await db.rollback()
+        # 只有在没有外部事务的情况下才回滚
+        if transaction is None:
+            await db.rollback()
         logger.error(f"数据库错误:{str(e)}")
         raise HTTPException(status_code=500, detail=f"数据库错误: {str(e)}")
     finally:
-        await db.close()
+        # 只有在没有外部事务的情况下才关闭连接
+        if transaction is None:
+            await db.close()
 
 @timeout()
-async def update_round(db: AsyncSession, round_update: UpdateRound) -> Round:
+async def update_round(db: AsyncSession, round_update: UpdateRound, transaction=None) -> Round:
     try:
         query = select(Round).where(Round.uuid == round_update.round_id)
         result = await db.execute(query)
@@ -164,18 +185,25 @@ async def update_round(db: AsyncSession, round_update: UpdateRound) -> Round:
         
         round.status = round_update.status
         db.add(round)
-        await db.commit()
-        await db.refresh(round)
+        
+        # 只有在没有外部事务的情况下才提交
+        if transaction is None:
+            await db.commit()
+            await db.refresh(round)
         return round
     except SQLAlchemyError as e:
-        await db.rollback()
+        # 只有在没有外部事务的情况下才回滚
+        if transaction is None:
+            await db.rollback()
         logger.error(f"数据库错误:{str(e)}")
         raise HTTPException(status_code=500, detail=f"数据库错误: {str(e)}")
     finally:
-        await db.close()
+        # 只有在没有外部事务的情况下才关闭连接
+        if transaction is None:
+            await db.close()
 
 @timeout()
-async def create_choices(db: AsyncSession, choices: Tuple[CreateChoice, CreateChoice], user_id: str) -> Tuple[ChoiceAppearance, ChoiceAppearance]:
+async def create_choices(db: AsyncSession, choices: Tuple[CreateChoice, CreateChoice], user_id: str, transaction=None) -> Tuple[ChoiceAppearance, ChoiceAppearance]:
     new_choices = []
     try:
         for choice in choices:
@@ -186,6 +214,7 @@ async def create_choices(db: AsyncSession, choices: Tuple[CreateChoice, CreateCh
                 raise HTTPException(status_code=404, detail="未找到指定的会话")
             
             new_choice = ChoiceAppearance(
+                uuid=str(uuid.uuid4()),  
                 round_id=choice.round_id,
                 session_id=choice.session_id, 
                 major_name=choice.major_name, 
@@ -194,20 +223,26 @@ async def create_choices(db: AsyncSession, choices: Tuple[CreateChoice, CreateCh
             )
             new_choices.append(new_choice)
             db.add(new_choice)
-            
-        await db.commit()
-        for choice in new_choices:
-            await db.refresh(choice)
+        
+        # 只有在没有外部事务的情况下才提交
+        if transaction is None:
+            await db.commit()
+            for choice in new_choices:
+                await db.refresh(choice)
         return new_choices[:2]
     except SQLAlchemyError as e:
-        await db.rollback()
+        # 只有在没有外部事务的情况下才回滚
+        if transaction is None:
+            await db.rollback()
         logger.error(f"数据库错误:{str(e)}")
         raise HTTPException(status_code=500, detail=f"数据库错误: {str(e)}")
     finally:
-        await db.close()
+        # 只有在没有外部事务的情况下才关闭连接
+        if transaction is None:
+            await db.close()
 
 @timeout()
-async def update_choices(db: AsyncSession, new_choices: Tuple[UpdateChoice, UpdateChoice]) -> ChoiceAppearance:
+async def update_choices(db: AsyncSession, new_choices: Tuple[UpdateChoice, UpdateChoice], transaction=None) -> Tuple[ChoiceAppearance, ChoiceAppearance]:
     updated_choices = []
     try:
         for new_choice in new_choices:
@@ -221,13 +256,19 @@ async def update_choices(db: AsyncSession, new_choices: Tuple[UpdateChoice, Upda
             updated_choices.append(choice)
             db.add(choice)
         
-        await db.commit()
-        for choice in updated_choices:
-            await db.refresh(choice)
+        # 只有在没有外部事务的情况下才提交
+        if transaction is None:
+            await db.commit()
+            for choice in updated_choices:
+                await db.refresh(choice)
         return updated_choices
     except SQLAlchemyError as e:
-        await db.rollback()
+        # 只有在没有外部事务的情况下才回滚
+        if transaction is None:
+            await db.rollback()
         logger.error(f"数据库错误:{str(e)}")
         raise HTTPException(status_code=500, detail=f"数据库错误: {str(e)}")
     finally:
-        await db.close()
+        # 只有在没有外部事务的情况下才关闭连接
+        if transaction is None:
+            await db.close()

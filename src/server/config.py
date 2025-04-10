@@ -1,7 +1,8 @@
 import os
+from pathlib import Path
 
 from dotenv import load_dotenv
-load_dotenv("../.env")  # 显式加载 .env 文件
+load_dotenv(Path.cwd() / ".env")
 
 BASE_URL: str = os.environ.get("BASE_URL")
 API_KEY: str = os.environ.get("API_KEY")

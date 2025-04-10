@@ -1,19 +1,21 @@
-from math import log
-import random
-from fastapi import Depends,  HTTPException, APIRouter
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from loguru import logger
-import asyncio
+import random
 import json
 
-from database.crud import (CreateChoice, CreateRound, UpdateRound, create_choices, create_round, 
-                           get_session, UpdateChoice, update_choices, update_round, update_session, UpdateSession)
+from database.models import SessionStatus, RoundStatus
 from database.base import get_db
-from database.models import RoundStatus, SessionStatus
-from routes.jwt_utils import get_current_user
-from llm import gen_majors_reveal, MajorsReveal, gen_wisdom_report
-from schemas import (MajorChoiceRequest, PostChoicesResponse, UserInfo, GetChoicesResponse, 
-                     GetRoundResponse, GenerrateType, ChoiceResponse, Report)
+from database.crud import (
+    UpdateSession, CreateRound, UpdateRound, 
+    CreateChoice, UpdateChoice, 
+    get_session, update_session, 
+    create_round, update_round, create_choices, update_choices
+)
+from database.unit_of_work import UnitOfWork
+from .jwt_utils import get_current_user
+from schemas import UserInfo, Report, MajorChoiceRequest, PostChoicesResponse, GetChoicesResponse, GetRoundResponse, GenerrateType, ChoiceResponse
+from llm import gen_majors_reveal, gen_wisdom_report
 
 majors = {"计算机类", "心理学类", "教育学类", "历史学类", "医学", "文学", "数学类", "物理学类"}
 
@@ -88,9 +90,9 @@ async def post_choices(session_id: str,
         raise HTTPException(status_code=500, detail="Internal Server Error")
 
 @options_router.get("/get_choices/{session_id}", response_model=GetChoicesResponse)
-async def get_choices(session_id: str, db: AsyncSession = Depends(get_db), user: UserInfo = Depends(get_current_user)) -> GetChoicesResponse:
+async def get_choices(session_id: str, db: AsyncSession = Depends(get_db), user: UserInfo = Depends(get_current_user), transaction=None) -> GetChoicesResponse:
     try:
-        session = await get_session(db, session_id, user.id)
+        session = await get_session(db, session_id, user.id, transaction=transaction)
         
         if len(session.rounds) == 0:
             raise HTTPException(status_code=400, detail="当前会话没有进行中的轮次")
@@ -131,7 +133,7 @@ async def get_choices(session_id: str, db: AsyncSession = Depends(get_db), user:
             )
         )
         
-        new_choices = await create_choices(db, (major_1, major_2), user.id)
+        new_choices = await create_choices(db, (major_1, major_2), user.id, transaction=transaction)
         
         new_choices_response = (ChoiceResponse(
             major_id=new_choices[0].uuid,
@@ -156,9 +158,9 @@ async def get_choices(session_id: str, db: AsyncSession = Depends(get_db), user:
         raise HTTPException(status_code=500, detail="Internal Server Error")
     
 @options_router.get("/get_round/{session_id}", response_model=GetRoundResponse)
-async def get_round(session_id: str, db: AsyncSession = Depends(get_db), user: UserInfo = Depends(get_current_user)) -> GetRoundResponse:
+async def get_round(session_id: str, db: AsyncSession = Depends(get_db), user: UserInfo = Depends(get_current_user), transaction=None) -> GetRoundResponse:
     try:
-        session = await get_session(db, session_id, user.id)
+        session = await get_session(db, session_id, user.id, transaction=transaction)
         base_info = session.base_information
         next_round_num = 1
         appearance_index_1 = 0
@@ -172,8 +174,8 @@ async def get_round(session_id: str, db: AsyncSession = Depends(get_db), user: U
             
         round_create = CreateRound(session_id=session_id, round_number=next_round_num, current_round_majors=current_round_majors)
         session_update = UpdateSession(session_id=session_id, current_round_number=next_round_num)
-        new_round = await create_round(db, round_create)
-        await update_session(db, session_update)
+        new_round = await create_round(db, round_create, transaction=transaction)
+        await update_session(db, session_update, transaction=transaction)
         
         major_name_1, major_name_2 = random.sample(list(current_round_majors), 2)
         major_reveal = await gen_majors_reveal(base_info, major_name_1, major_name_2)
@@ -196,7 +198,7 @@ async def get_round(session_id: str, db: AsyncSession = Depends(get_db), user: U
             )
         )
         
-        new_choices = await create_choices(db, (major_1, major_2), user.id)
+        new_choices = await create_choices(db, (major_1, major_2), user.id, transaction=transaction)
         
         return GetRoundResponse(
             current_round_number=next_round_num,
@@ -223,11 +225,11 @@ async def get_round(session_id: str, db: AsyncSession = Depends(get_db), user: U
         raise HTTPException(status_code=500, detail="Internal Server Error")
         
 @options_router.get("/gen_report/{session_id}", response_model=Report)
-async def gen_report(session_id: str, user: UserInfo = Depends(get_current_user), db: AsyncSession = Depends(get_db)) -> Report:
+async def gen_report(session_id: str, user: UserInfo = Depends(get_current_user), db: AsyncSession = Depends(get_db), transaction=None) -> Report:
     """生成最终的报告"""
     logger.info(f"生成用户 {user.id} 的会话 {session_id} 的最终报告")
     
-    session = await get_session(db, session_id, user.id)
+    session = await get_session(db, session_id, user.id, transaction=transaction)
     
     if session.status != SessionStatus.FINISHED:
         raise HTTPException(status_code=400, detail="会话未完成，无法生成报告")
@@ -282,7 +284,7 @@ async def gen_report(session_id: str, user: UserInfo = Depends(get_current_user)
             final_recommendation=wisdom_report.final_recommendation
         )
         
-        await update_session(db, UpdateSession(session_id=session_id, current_round_number=session.current_round_number, report=report))
+        await update_session(db, UpdateSession(session_id=session_id, current_round_number=session.current_round_number, report=report), transaction=transaction)
         
         return Report(
             final_three_majors=wisdom_report.final_three_majors,
@@ -292,3 +294,121 @@ async def gen_report(session_id: str, user: UserInfo = Depends(get_current_user)
     except Exception as e:
         logger.error(f"生成报告时发生错误: {e}")
         raise HTTPException(status_code=500, detail=f"生成报告失败: {str(e)}")
+
+@options_router.post("/save_and_next/{session_id}", response_model=dict)
+async def save_choice_and_generate_next(
+    session_id: str, 
+    choice_request: MajorChoiceRequest,
+    user: UserInfo = Depends(get_current_user), 
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    整合API：保存用户选择并自动生成下一步（新选项/新一轮/报告）
+    如果任何步骤失败将自动回滚
+    """
+    # 使用UnitOfWork模式管理事务
+    async with UnitOfWork(db) as uow:
+        try:
+            # 步骤1: 判断是否是第一轮，如果是且没有选择，直接生成第一轮
+            session = await get_session(db, session_id, user.id, transaction=uow.transaction)
+            
+            if len(session.rounds) == 0 and choice_request.choices is None:
+                result = await get_round(session_id, db, user, transaction=uow.transaction)
+                return {
+                    "status": "success",
+                    "operation": "GENERATE_ROUND",
+                    "data": result
+                }
+            
+            # 步骤2: 保存用户选择
+            if choice_request.choices:
+                update_choice_1 = UpdateChoice(
+                    uuid=choice_request.choices[0].major_id, 
+                    is_winner_in_comparison=choice_request.choices[0].is_winner_in_comparison
+                )
+                update_choice_2 = UpdateChoice(
+                    uuid=choice_request.choices[1].major_id, 
+                    is_winner_in_comparison=choice_request.choices[1].is_winner_in_comparison
+                )
+                await update_choices(db, (update_choice_1, update_choice_2), transaction=uow.transaction)
+            
+            # 步骤3: 获取更新后的会话，判断下一步操作
+            updated_session = await get_session(db, session_id, user.id, transaction=uow.transaction)
+            last_round = updated_session.rounds[-1]
+            
+            # 检查是否需要生成报告（最后一轮）
+            if len(last_round.current_round_majors) == 2 and len(last_round.appearances) == 2:
+                await update_session(db, UpdateSession(
+                    session_id=session_id, 
+                    current_round_number=last_round.round_number + 1, 
+                    status=SessionStatus.FINISHED, 
+                ), transaction=uow.transaction)
+                
+                # 生成报告
+                report_response = await gen_report(session_id, user, db, transaction=uow.transaction)
+                
+                return {
+                    "status": "success",
+                    "operation": "GENERATE_REPORT",
+                    "data": report_response
+                }
+            
+            # 辅助函数：获取未出现的专业
+            def get_unappear_majors(round):
+                appeared_majors = {choice.major_name for choice in round.appearances if choice.is_winner_in_comparison is not None}
+                unappear_majors = set(round.current_round_majors) - appeared_majors
+                return unappear_majors
+            
+            # 检查当前轮次是否已完成
+            unappear_majors = get_unappear_majors(last_round)
+            
+            # 报错测试
+            # raise Exception("测试报错")
+            
+            if len(unappear_majors) == 0 or len(unappear_majors) == 1:
+                # 处理轮空晋级情况
+                if len(unappear_majors) == 1:
+                    remaining_major = list(unappear_majors)[0]
+                    auto_win_choice = CreateChoice(
+                        round_id=last_round.uuid,
+                        session_id=session_id,
+                        major_name=remaining_major,
+                        description=f"{remaining_major}轮空晋级",
+                        appearance_index=len(last_round.appearances)
+                    )
+                    new_choices = await create_choices(db, (auto_win_choice, auto_win_choice), user.id, transaction=uow.transaction)
+                    auto_win_update = UpdateChoice(
+                        uuid=new_choices[0].uuid,
+                        is_winner_in_comparison=True
+                    )
+                    await update_choices(db, (auto_win_update, auto_win_update), transaction=uow.transaction)
+                
+                # 更新轮次状态
+                round_update = UpdateRound(round_id=last_round.uuid, status=RoundStatus.COMPLETED)
+                await update_round(db, round_update, transaction=uow.transaction)
+                
+                # 生成新一轮
+                new_round = await get_round(session_id, db, user, transaction=uow.transaction)
+                
+                return {
+                    "status": "success",
+                    "operation": "GENERATE_ROUND",
+                    "data": new_round
+                }
+            
+            # 默认情况：生成新选项
+            choices_response = await get_choices(session_id, db, user, transaction=uow.transaction)
+            
+            return {
+                "status": "success",
+                "operation": "GENERATE_CHOICES",
+                "data": choices_response
+            }
+        
+        except Exception as e:
+            # UnitOfWork会自动回滚事务
+            logger.error(f"保存选择和生成下一步操作失败: {str(e)}")
+            raise HTTPException(
+                status_code=500, 
+                detail=f"操作失败并已回滚: {str(e)}"
+            )

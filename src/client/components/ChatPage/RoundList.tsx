@@ -2,14 +2,15 @@
 import React from 'react';
 import { Spin } from 'antd';
 import RoundCard from './RoundCard';
-import { RoundResponse, ChoiceResponse, MajorChoice } from '../../Api';
+import { RoundResponse, ChoiceResponse } from '../../Api';
 
 interface RoundListProps {
   rounds: RoundResponse[];
   isLoading: boolean;
   latestChoices: [ChoiceResponse, ChoiceResponse] | null;
-  onSelectChoice: (choice1: MajorChoice, choice2: MajorChoice) => void;
+  onSelectChoice: (selectedChoice: ChoiceResponse, otherChoice: ChoiceResponse) => void;
   activeRoundIndex?: number;
+  isSessionFinished?: boolean;
 }
 
 const RoundList: React.FC<RoundListProps> = ({ 
@@ -17,7 +18,8 @@ const RoundList: React.FC<RoundListProps> = ({
   isLoading, 
   latestChoices, 
   onSelectChoice, 
-  activeRoundIndex 
+  activeRoundIndex,
+  isSessionFinished
 }) => {
   return (
     <div className="p-5 w-full max-w-[1000px] mx-auto">
@@ -25,11 +27,12 @@ const RoundList: React.FC<RoundListProps> = ({
         <RoundCard
           key={index}
           round={round}
-          isLatest={index === rounds.length - 1}
+          // isLatest={index === rounds.length - 1}
           isActive={activeRoundIndex === undefined ? index === rounds.length - 1 : index === activeRoundIndex}
           onSelectChoice={onSelectChoice}
           latestChoices={index === rounds.length - 1 ? latestChoices : null}
           isLoading={isLoading}
+          isSessionFinished={isSessionFinished}
         />
       ))}
       

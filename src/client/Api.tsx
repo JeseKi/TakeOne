@@ -98,6 +98,12 @@ export interface SessionContentResponse {
     report?: GetReportResponse;
 }
 
+export interface SaveAndNextResponse {
+    status: string;
+    operation: string;
+    data: GetChoicesResponse | GetRoundResponse | GetReportResponse;
+}
+
 export class MissingFieldsError extends Error {
     public missingFields: string[];
 
@@ -185,10 +191,11 @@ const GetSessionContent = async (session_id: string, accessToken: string): Promi
     }
 }
 
-const GetChoices = async (session_id: string, accessToken: string): Promise<GetChoicesResponse> => {
+const SaveAndNext = async (session_id: string, choices: MajorChoiceRequest | null, accessToken: string): Promise<SaveAndNextResponse> => {
     try {
-        const response = await axios.get<GetChoicesResponse>(
-            `${config.backendApiUrl}/options/get_choices/${session_id}`,
+        const response = await axios.post<SaveAndNextResponse>(
+            `${config.backendApiUrl}/options/save_and_next/${session_id}`,
+            choices || { choices: null },
             {
                 headers: {
                     Authorization: `Bearer ${accessToken}`,
@@ -197,59 +204,7 @@ const GetChoices = async (session_id: string, accessToken: string): Promise<GetC
         );
         return response.data;
     } catch (error: any) {
-        console.error('获取选项失败', error);
-        throw error;
-    }
-}
-
-const PostChoices = async (session_id: string, choices: MajorChoiceRequest, accessToken: string): Promise<PostChoicesResponse> => {
-    try {
-        const response = await axios.post<PostChoicesResponse>(
-            `${config.backendApiUrl}/options/post_choices/${session_id}`,
-            choices,
-            {
-                headers: {
-                    Authorization: `Bearer ${accessToken}`,
-                },
-            }
-        );
-        return response.data;
-    } catch (error: any) {
-        console.error('提交选择失败', error);
-        throw error;
-    }
-}
-
-const GetRound = async (session_id: string, accessToken: string): Promise<GetRoundResponse> => {
-    try {
-        const response = await axios.get<GetRoundResponse>(
-            `${config.backendApiUrl}/options/get_round/${session_id}`,
-            {
-                headers: {
-                    Authorization: `Bearer ${accessToken}`,
-                },
-            }
-        );
-        return response.data;
-    } catch (error: any) {
-        console.error('获取新一轮失败', error);
-        throw error;
-    }
-}
-
-const GetReport = async (session_id: string, accessToken: string): Promise<GetReportResponse> => {
-    try {
-        const response = await axios.get<GetReportResponse>(
-            `${config.backendApiUrl}/options/gen_report/${session_id}`,
-            {
-                headers: {
-                    Authorization: `Bearer ${accessToken}`,
-                },
-            }
-        );
-        return response.data;
-    } catch (error: any) {
-        console.error('获取报告失败', error);
+        console.error('保存选择并获取下一步失败', error);
         throw error;
     }
 }
@@ -292,4 +247,4 @@ const PostBaseInformation = async (data: BaseInformation, accessToken: string): 
     }
 }
 
-export { GetLoginUrl , GetTokenResponse , GetUserInfo , PostBaseInformation , GetSessionsID , GetSessionContent, GetChoices, PostChoices, GetRound, GetReport };
+export { GetLoginUrl, GetTokenResponse, GetUserInfo, PostBaseInformation, GetSessionsID, GetSessionContent, SaveAndNext };
