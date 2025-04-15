@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import BaseInformationPanel from './components/BaseInfomation';
 import Callback from './pages/Callback';
 import { GetUserInfo } from './Api';
-import Chat from './pages/Chats/Chats';
+import Chat from './pages/Chats';
 import Login from './pages/Login';
 
 function App() {
@@ -41,7 +41,7 @@ function App() {
   }
 
   return (
-    <div className="w-full mx-auto text-center">
+      <div className="w-full">
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/callback" element={<Callback />} />

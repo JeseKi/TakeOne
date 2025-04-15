@@ -10,6 +10,7 @@ logs.log
 thinking
 __pycache__
 *.pyc
+sample
 
 learns
 .vscode
@@ -29,8 +30,6 @@ node_modules
 dist
 dist-ssr
 *.local
-
-config.tsx
 
 # Editor directories and files
 .vscode/*

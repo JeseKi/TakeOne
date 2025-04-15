@@ -1,10 +1,84 @@
 import { useState } from 'react';
-import { TextArea, GradientButton , Alert } from '@lobehub/ui';
-import { Spin } from 'antd';
-import { LoadingOutlined } from '@ant-design/icons';
+import { Input, Button, Spin, Card } from 'antd';
+import { LeftCircleOutlined, LoadingOutlined, RightCircleOutlined } from '@ant-design/icons';
+import styles from './BaseInfomation.module.css';
 
-import { BaseInformation , MissingFieldsError, PostBaseInformation } from '../Api';
+import { PostBaseInformation } from '../Api';
 import { useNavigate } from 'react-router-dom';
+
+// 问题配置
+const questions = [
+  {
+    name: 'max_living_expenses_from_parents',
+    label: '💰️父母可供生活费上限',
+    placeholder: '1500元每月，父母每月固定转账',
+  },
+  {
+    name: 'city_tier',
+    label: '🏙主要居住地区是几线城市？',
+    placeholder: '二线城市，江苏苏州',
+  },
+  {
+    name: 'has_stable_hobby',
+    label: '🤩是否有稳定的爱好？',
+    placeholder: '喜欢打篮球和弹吉他，每周固定练习',
+  },
+  {
+    name: 'enough_savings_for_college',
+    label: '💰️当前积蓄是否可能不贷款供完大学四年的生活费？',
+    placeholder: '我的积蓄大约能支持2年生活费，剩下需要贷款',
+  },
+  {
+    name: 'pocket_money_usage',
+    label: '💰️你平时的零花钱的用途是什么？',
+    placeholder: '如：日常餐饮、交通、娱乐、学习资料等',
+  },
+  {
+    name: 'willing_to_repeat_high_school_for_money',
+    label: '💰️假如让你再读三年高三，每年都会给你的家庭免费的十万人民币，你愿意吗？',
+    placeholder: '如果每年给10万，我会/不会愿意，原因是……',
+  },
+  {
+    name: 'parents_in_public_sector',
+    label: '👨👩父母是否属于体制内？',
+    placeholder: '父母一方/双方在体制内/都不在体制内',
+  },
+  {
+    name: 'self_learning_after_gaokao',
+    label: '📚️在高考完后的这段时间，是否有每天自主学习的习惯？',
+    placeholder: '每天坚持自学编程1小时',
+  },
+  {
+    name: 'proactive_in_competitions',
+    label: '🏁是否主动参加过竞赛？',
+    placeholder: '主动参加过数学建模比赛',
+  },
+  {
+    name: 'likes_reading_extracurricular_books',
+    label: '📙平时是否喜欢阅读课外书？',
+    placeholder: '喜欢看科幻小说和心理学书籍',
+  },
+];
+
+// 每页显示3个问题
+const stepSize = 3;
+const steps = Array.from({ length: Math.ceil(questions.length / stepSize) }, (_, i) =>
+  questions.slice(i * stepSize, i * stepSize + stepSize)
+);
+
+interface BaseInformation {
+  max_living_expenses_from_parents: string;
+  enough_savings_for_college: string;
+  pocket_money_usage: string;
+  willing_to_repeat_high_school_for_money: string;
+  city_tier: string;
+  parents_in_public_sector: string;
+  has_stable_hobby: string;
+  self_learning_after_gaokao: string;
+  proactive_in_competitions: string;
+  likes_reading_extracurricular_books: string;
+  [key: string]: string;
+}
 
 interface BaseInformationProps {
   accessToken: string;
@@ -13,14 +87,16 @@ interface BaseInformationProps {
 }
 
 const BaseInformationPanel: React.FC<BaseInformationProps> = (props: BaseInformationProps) => {
-  const { accessToken , base_information, submit_event: onSubmit } = props;
-  const navigate = useNavigate();
-  const [alertMessage, setAlertMessage] = useState<string | null>(null);
-  const [showAlert, setShowAlert] = useState<boolean>(false);
-  const [loading, setLoading] = useState<boolean>(false);
-  const [formData, setFormData] = useState<BaseInformation>(() => {
+  const { accessToken , base_information } = props;
 
-  if (base_information !== null) {
+  const navigate = useNavigate();
+  const [loading, setLoading] = useState<boolean>(false);
+  const [currentStep, setCurrentStep] = useState(0);
+  const [hoverBackButton, setHoverBackButton] = useState<boolean>(false);
+  const [hoverNextButton, setHoverNextButton] = useState<boolean>(false);
+
+  const [formData, setFormData] = useState<BaseInformation>(() => {
+    if (base_information !== null) {
       return { ...base_information };
     }
     return {
@@ -47,6 +123,9 @@ const BaseInformationPanel: React.FC<BaseInformationProps> = (props: BaseInforma
     }));
   };
 
+  // 判断当前step的所有问题都已填写
+  const isCurrentStepFilled = steps[currentStep].every(q => !!formData[q.name]?.trim());
+
   const handleSubmit = async () => {
     setLoading(true);
     try {
@@ -54,137 +133,83 @@ const BaseInformationPanel: React.FC<BaseInformationProps> = (props: BaseInforma
       console.log('提交成功:', formData);
       navigate(`/chat?session=${session_uuid}`);
     } catch (error) {
-      if (error instanceof MissingFieldsError) {
-        setAlertMessage("请填写所有问题的回答！");
-        setShowAlert(true);
-      } else {
         console.error('提交失败:', error)
-      }
     } finally {
       setLoading(false);
     }
   };
 
-	const handleCommitEvent = () => {
-		if (onSubmit !== undefined) {
-		  handleSubmit();
-		  onSubmit();
-		}
-		else {
-		  handleSubmit();
-		}
-	};
+  const handleNext = () => {
+    if (currentStep < steps.length - 1) {
+      setCurrentStep(currentStep + 1);
+    }
+  };
 
-  const antIcon = <LoadingOutlined className="text-2xl" spin />;
+  const handlePrev = () => {
+    if (currentStep > 0) {
+      setCurrentStep(currentStep - 1);
+    }
+  };
 
   return (
-    <div className="w-[80%] max-w-4xl mx-auto px-4 py-6">
-      {showAlert && alertMessage && (
-          <Alert
-              type='info'
-              message={alertMessage}
-              closable
-              onClose={() => setShowAlert(false)}
-              className="mb-4"
-          />
-      )}
-      <h3 className="text-lg font-medium mb-2">💰️父母可供的大学生活费上限是多少？</h3>
-      <TextArea
-        name="max_living_expenses_from_parents"
-        value={formData.max_living_expenses_from_parents}
-        onChange={handleChange}
-        readOnly={base_information !== null}
-        className="mb-4 w-full h-auto min-h-[100px]"
-      />
-
-      <h3 className="text-lg font-medium mb-2">💰️当前积蓄是否可能不贷款供完大学四年的生活费？</h3>
-      <TextArea
-        name="enough_savings_for_college"
-        value={formData.enough_savings_for_college}
-        onChange={handleChange}
-        readOnly={base_information !== null}
-        className="mb-4 w-full h-auto min-h-[100px]"
-      />
-
-      <h3 className="text-lg font-medium mb-2">💰️你平时的零花钱的用途是什么？</h3>
-      <TextArea 
-        name="pocket_money_usage" 
-        value={formData.pocket_money_usage} 
-        onChange={handleChange} 
-        readOnly={base_information !== null}
-        className="mb-4 w-full h-auto min-h-[100px]"
-      />
-
-      <h3 className="text-lg font-medium mb-2">💰️假如让你再读三年高三，每年都会给你的家庭免费的十万人民币，你愿意吗？</h3>
-      <TextArea
-        name="willing_to_repeat_high_school_for_money"
-        value={formData.willing_to_repeat_high_school_for_money}
-        onChange={handleChange}
-        readOnly={base_information !== null}
-        className="mb-4 w-full h-auto min-h-[100px]"
-      />
-
-      <h3 className="text-lg font-medium mb-2">🏙主要居住地区是几线城市？</h3>
-      <TextArea 
-        name="city_tier" 
-        value={formData.city_tier} 
-        onChange={handleChange} 
-        readOnly={base_information !== null}
-        className="mb-4 w-full h-auto min-h-[100px]"
-      />
-
-      <h3 className="text-lg font-medium mb-2">👨👩父母是否属于体制内？</h3>
-      <TextArea
-        name="parents_in_public_sector"
-        value={formData.parents_in_public_sector}
-        onChange={handleChange}
-        readOnly={base_information !== null}
-        className="mb-4 w-full h-auto min-h-[100px]"
-      />
-
-      <h3 className="text-lg font-medium mb-2">🤩是否有稳定的爱好？</h3>
-      <TextArea 
-        name="has_stable_hobby" 
-        value={formData.has_stable_hobby} 
-        onChange={handleChange} 
-        readOnly={base_information !== null}
-        className="mb-4 w-full h-auto min-h-[100px]"
-      />
-
-      <h3 className="text-lg font-medium mb-2">📚️在高考完后的这段时间，是否有每天自主学习的习惯？</h3>
-      <TextArea
-        name="self_learning_after_gaokao"
-        value={formData.self_learning_after_gaokao}
-        onChange={handleChange}
-        readOnly={base_information !== null}
-        className="mb-4 w-full h-auto min-h-[100px]"
-      />
-
-      <h3 className="text-lg font-medium mb-2">🏁是否主动参加过竞赛？</h3>
-      <TextArea
-        name="proactive_in_competitions"
-        value={formData.proactive_in_competitions}
-        onChange={handleChange}
-        readOnly={base_information !== null}
-        className="mb-4 w-full h-auto min-h-[100px]"
-      />
-
-      <h3 className="text-lg font-medium mb-2">📙平时是否喜欢阅读课外书？</h3>
-      <TextArea
-        name="likes_reading_extracurricular_books"
-        value={formData.likes_reading_extracurricular_books}
-        onChange={handleChange}
-        readOnly={base_information !== null}
-        className="mb-4 w-full h-auto min-h-[100px]"
-      />
-
-      {base_information === null && 
-        <div className="mt-6 mb-10 flex justify-center">
-          <GradientButton onClick={handleCommitEvent} htmlType="submit" disabled={loading} className="px-8 py-2">
-            {loading ? <Spin indicator={antIcon} /> : '提交'}
-          </GradientButton>
+    <div className={`${styles.skContainer} w-4/5 sm:w-3/4 md:w-1/2 lg:w-1/3 mx-auto my-10`}>
+      <Card className={styles.skCard}>
+        <h1 className='text-2xl font-bold my-4'>基础信息表</h1>
+        {steps[currentStep].map((q) => (
+          <div key={q.name}>
+            <h3 className='text-lg font-medium my-2'>{q.label}</h3>
+            <Input.TextArea
+              name={q.name}
+              placeholder={q.placeholder}
+              value={formData[q.name] || ''}
+              onChange={handleChange}
+              readOnly={base_information !== null}
+              className={`${styles.skTextarea} text-2xl`}
+              autoSize={{ minRows: 3 }}
+            />
+          </div>
+        ))}
+        <div>
+          {currentStep > 0 && (
+            <Button 
+              className={styles.skButton + (hoverBackButton ? styles.skButtonBackHover : '')} 
+              onClick={handlePrev} 
+              disabled={loading} 
+              style={{marginRight: 16}}
+              onMouseEnter={() => setHoverBackButton(true)}
+              onMouseLeave={() => setHoverBackButton(false)}
+            >
+              <LeftCircleOutlined />
+              上一步
+            </Button>
+          )}
+          {currentStep < steps.length - 1 ? (
+            <Button
+              type="primary"
+              className={isCurrentStepFilled && !loading ? styles.skButton : styles.skButtonDisabled + (hoverNextButton ? styles.skButtonNextHover : '')}
+              disabled={!isCurrentStepFilled || loading}
+              onClick={handleNext}
+              onMouseEnter={() => setHoverNextButton(true)}
+              onMouseLeave={() => setHoverNextButton(false)}
+            >
+              下一步
+              <RightCircleOutlined />
+            </Button>
+          ) : (
+            <Button
+              type="primary"
+              loading={loading}
+              className={isCurrentStepFilled && !loading ? styles.skButton : styles.skButtonDisabled + (hoverNextButton ? styles.skButtonNextHover : '')}
+              disabled={!isCurrentStepFilled || loading}
+              onClick={handleSubmit}
+              onMouseEnter={() => setHoverNextButton(true)}
+              onMouseLeave={() => setHoverNextButton(false)}
+            >
+              提交
+            </Button>
+          )}
         </div>
-      }
+      </Card>
     </div>
   );
 }

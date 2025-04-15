@@ -60,7 +60,7 @@ export default function SessionsList(props: SessionsListProps) {
 
     const sessionsList: SessionItem[] = sessionsId ? sessionsId.map((sessionId: string, index: number): SessionItem => {
         return {
-            title: `第 ${index + 1} 次对话`,
+            title: `第 ${index + 1} 次会话`,
             description: sessionId,
         };
     }) : [];
