@@ -72,7 +72,7 @@ export default function SessionsList(props: SessionsListProps) {
                 onClick={handleCreateNewSession}
             >
                 <PlusOutlined className="text-base mr-2.5" />
-                <span className="text-sm font-medium text-gray-800 dark:text-gray-200">新建对话</span>
+                <span className="text-sm font-medium text-gray-800 dark:text-gray-200">新建会话</span>
             </div>
             
             <div className="flex justify-between items-center mb-4 p-2 px-2.5">

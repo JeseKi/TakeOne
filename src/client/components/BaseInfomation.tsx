@@ -1,10 +1,11 @@
 import { useState } from 'react';
-import { Input, Button, Spin, Card } from 'antd';
-import { LeftCircleOutlined, LoadingOutlined, RightCircleOutlined } from '@ant-design/icons';
-import styles from './BaseInfomation.module.css';
+import { Input, Button, Card } from 'antd';
+import { LeftCircleOutlined, RightCircleOutlined, UpCircleOutlined } from '@ant-design/icons';
 
 import { PostBaseInformation } from '../Api';
 import { useNavigate } from 'react-router-dom';
+
+import styles from './BaseInfomation.module.css';
 
 // 问题配置
 const questions = [
@@ -83,7 +84,6 @@ interface BaseInformation {
 interface BaseInformationProps {
   accessToken: string;
   base_information: BaseInformation | null;
-  submit_event?: () => void;
 }
 
 const BaseInformationPanel: React.FC<BaseInformationProps> = (props: BaseInformationProps) => {
@@ -92,8 +92,8 @@ const BaseInformationPanel: React.FC<BaseInformationProps> = (props: BaseInforma
   const navigate = useNavigate();
   const [loading, setLoading] = useState<boolean>(false);
   const [currentStep, setCurrentStep] = useState(0);
-  const [hoverBackButton, setHoverBackButton] = useState<boolean>(false);
-  const [hoverNextButton, setHoverNextButton] = useState<boolean>(false);
+  // const [hoverBackButton, setHoverBackButton] = useState<boolean>(false); // TODO: 文本悬浮时朝对应方向移动
+  // const [hoverNextButton, setHoverNextButton] = useState<boolean>(false);
 
   const [formData, setFormData] = useState<BaseInformation>(() => {
     if (base_information !== null) {
@@ -172,12 +172,10 @@ const BaseInformationPanel: React.FC<BaseInformationProps> = (props: BaseInforma
         <div>
           {currentStep > 0 && (
             <Button 
-              className={styles.skButton + (hoverBackButton ? styles.skButtonBackHover : '')} 
+              className={styles.skButton} 
               onClick={handlePrev} 
               disabled={loading} 
               style={{marginRight: 16}}
-              onMouseEnter={() => setHoverBackButton(true)}
-              onMouseLeave={() => setHoverBackButton(false)}
             >
               <LeftCircleOutlined />
               上一步
@@ -186,11 +184,9 @@ const BaseInformationPanel: React.FC<BaseInformationProps> = (props: BaseInforma
           {currentStep < steps.length - 1 ? (
             <Button
               type="primary"
-              className={isCurrentStepFilled && !loading ? styles.skButton : styles.skButtonDisabled + (hoverNextButton ? styles.skButtonNextHover : '')}
+              className={`${isCurrentStepFilled && !loading ? styles.skButton : styles.skButtonDisabled}`}
               disabled={!isCurrentStepFilled || loading}
               onClick={handleNext}
-              onMouseEnter={() => setHoverNextButton(true)}
-              onMouseLeave={() => setHoverNextButton(false)}
             >
               下一步
               <RightCircleOutlined />
@@ -199,13 +195,12 @@ const BaseInformationPanel: React.FC<BaseInformationProps> = (props: BaseInforma
             <Button
               type="primary"
               loading={loading}
-              className={isCurrentStepFilled && !loading ? styles.skButton : styles.skButtonDisabled + (hoverNextButton ? styles.skButtonNextHover : '')}
+              className={isCurrentStepFilled && !loading ? styles.skButton : styles.skButtonDisabled}
               disabled={!isCurrentStepFilled || loading}
               onClick={handleSubmit}
-              onMouseEnter={() => setHoverNextButton(true)}
-              onMouseLeave={() => setHoverNextButton(false)}
             >
               提交
+              <UpCircleOutlined />
             </Button>
           )}
         </div>
@@ -213,5 +208,29 @@ const BaseInformationPanel: React.FC<BaseInformationProps> = (props: BaseInforma
     </div>
   );
 }
+
+interface BaseInformationDisplayCardProps {
+  base_information: BaseInformation;
+}
+
+export const BaseInformationDisplayCard: React.FC<BaseInformationDisplayCardProps> = ({ base_information }) => {
+  return (
+    <div className='w-full shadow-2xl'>
+      <Card>
+        <h1 className='text-2xl font-bold my-4'>基础信息</h1>
+        {questions.map((q) => (
+          <div key={q.name} className="mb-4">
+            <div className="text-base font-medium text-gray-600 mb-1 flex items-center">
+              <span>{q.label}</span>
+            </div>
+            <div className="bg-gray-50 rounded px-3 py-2 text-gray-900 border border-gray-200 min-h-[2rem]">
+              {base_information?.[q.name] ? base_information[q.name] : <span className="text-gray-400">未填写</span>}
+            </div>
+          </div>
+        ))}
+      </Card>
+    </div>
+  );
+};
 
 export default BaseInformationPanel;

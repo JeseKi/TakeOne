@@ -1,0 +1,13 @@
+.skSecondButton {
+    position: fixed;
+    border-radius: 0.75rem;
+    font-weight: bold;
+    font-size: 1.125rem;
+    background: #8ecae6;
+    color: #fff !important;
+    border: none;
+    cursor: pointer;
+  }
+  .skSecondButton:hover {
+    background: #219ebc !important;
+  }

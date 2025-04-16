@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { Card, Spin, Modal, message } from 'antd';
-import { GradientButton, Markdown } from '@lobehub/ui';
+import { Card, Spin, Modal, message, Button } from 'antd';
+import { Markdown } from '@lobehub/ui';
 
 import {
   GetSessionContent,
@@ -14,8 +14,12 @@ import {
   GetChoicesResponse,
   GetRoundResponse
 } from '../../Api';
-import BaseInformationPanel from '../BaseInfomation';
+import BaseInformationPanel, { BaseInformationDisplayCard } from '../BaseInfomation';
 import RoundList from './RoundList';
+
+import styles from './ChatPage.module.css';
+import { UserOutlined } from '@ant-design/icons';
+
 interface SessionContentProps {
   session_id: string;
   accessToken: string;
@@ -126,17 +130,14 @@ const SessionContent: React.FC<SessionContentProps> = ({ session_id, accessToken
         choices: [choice1, choice2]
       };
       
-      // 调用新的集成API
       const response = await SaveAndNext(session_id, request, accessToken);
       
-      // 处理返回结果
       if (response.status === 'success') {
         // 根据操作类型更新UI
         if (response.operation === 'GENERATE_CHOICES') {
           const choicesResponse = response.data as GetChoicesResponse;
           setLatestChoices(choicesResponse.choices);
           
-          // 更新rounds状态中的appearances数组
           setRounds(prev => {
             const newRounds = [...prev];
             if (newRounds.length > 0) {
@@ -200,8 +201,8 @@ const SessionContent: React.FC<SessionContentProps> = ({ session_id, accessToken
     reportContent += '### 最终推荐\n\n';
     // 处理文本，移除开头的空格、制表符和可能导致被解析为代码块的格式
     const processedRecommendation = report.final_recommendation
-      .replace(/^(\s{4}|\t)+/gm, '') // 移除每行开头的4个空格或制表符
-      .replace(/```/g, ''); // 移除可能存在的代码块标记
+      .replace(/^(\s{4}|\t)+/gm, '')
+      .replace(/```/g, '');
     reportContent += processedRecommendation;
     
     return reportContent;
@@ -212,7 +213,7 @@ const SessionContent: React.FC<SessionContentProps> = ({ session_id, accessToken
   }
 
   return (
-    <div className="p-5 w-full max-w-[1000px] mx-auto">
+    <div className="p-5">
       <RoundList
         rounds={rounds}
         isLoading={loadingChoices}
@@ -222,33 +223,30 @@ const SessionContent: React.FC<SessionContentProps> = ({ session_id, accessToken
         isSessionFinished={sessionData?.status === "FINISHED" || !!report}
       />
 
-      <div className="w-full flex flex-col items-center">
-        <GradientButton 
-          onClick={() => setShowModal(true)}
-          className="fixed right-[15%] top-[1%] z-10"
-        >
-          查看基本信息
-        </GradientButton>
-        {report && (
-          <div className="mb-24 w-full md:w-3/4 lg:w-1/2 shadow-md">
-            <Card className="text-left">
-              <Markdown>{renderReport()}</Markdown>
-            </Card>
-          </div>
-        )}
-      </div>
+      <Button 
+        className={`right-1 top-1 sm:right-2 sm:top-2 xl:right-10 xl:top-4 z-30 ${styles.skSecondButton}`}
+        type='dashed'
+        shape='circle'
+        icon={<UserOutlined />}
+        onClick={() => setShowModal(true)}
+      />
+
+      {report && (
+        <div className="mb-24 md:w-3/4 lg:w-1/2 shadow-2xl mx-auto text-left">
+          <Card>
+            <Markdown>{renderReport()}</Markdown>
+          </Card>
+        </div>
+      )}
 
       <Modal
-        title="基本信息"
         open={showModal}
         onCancel={() => setShowModal(false)}
         footer={null}
         width={800}
       >
-        <BaseInformationPanel 
+        <BaseInformationDisplayCard 
           base_information={baseInfo} 
-          accessToken={accessToken}
-          submit_event={() => {}}
         />
       </Modal>
     </div>

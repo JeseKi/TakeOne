@@ -1,7 +1,6 @@
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 
-import BaseInformationPanel from './components/BaseInfomation';
 import Callback from './pages/Callback';
 import { GetUserInfo } from './Api';
 import Chat from './pages/Chats';
@@ -41,24 +40,20 @@ function App() {
   }
 
   return (
-      <div className="w-full">
+      <>
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/callback" element={<Callback />} />
         {isAuthenticated ? (
           <>
             <Route path="/" element={<Chat accessToken={accessToken} />} />
-            <Route
-              path="/base_information"
-              element={<BaseInformationPanel accessToken={accessToken} base_information={null} submit_event={undefined} />}
-            />
             <Route path="/chat/*" element={<Chat accessToken={accessToken} />} />
           </>
         ) : (
           <Route path="*" element={<Navigate to="/login" replace />} />
         )}
       </Routes>
-    </div>
+    </>
   );
 }
 

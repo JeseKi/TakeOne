@@ -1,7 +1,3 @@
-.skCard {
-  box-shadow: 0 4px 24px 0 #e3e8ef77;
-}
-
 .skTextarea {
   width: 100%;
   min-height: 60px;
@@ -36,14 +32,7 @@
 }
 .skButton:hover {
   background: linear-gradient(90deg, #219ebc 0%, #8ecae6 100%) !important;
-}
-
-.skButtonBackHover {
-  text-align: left !important;
-}
-
-.skButtonNextHover {
-  text-align: right !important;
+  text-align: right !important
 }
 
 .skButtonDisabled {

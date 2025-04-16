@@ -7,6 +7,8 @@ import SessionsList from '../components/ChatPage/SessionsList';
 import BaseInformationPanel from '../components/BaseInfomation';
 import SessionContent from '../components/ChatPage/SessionContent';
 
+import styles from './Chats.module.css';
+
 interface ChatsNavProps {
     accessToken: string;
 }
@@ -37,10 +39,10 @@ const Chat: React.FC<ChatsNavProps> = (props) => {
     };
 
     return (
-        <div>
+        <>
             <Button
-                className="fixed top-4 left-4 z-30"
-                type="primary"
+                className={`left-1 top-1 sm:left-2 sm:top-2 xl:left-10 xl:top-4 z-30 ${styles.skSecondButton}`}
+                type="dashed"
                 shape="circle"
                 icon={<MenuOutlined />}
                 onClick={showModal}
@@ -56,22 +58,24 @@ const Chat: React.FC<ChatsNavProps> = (props) => {
                 destroyOnClose={false}
                 maskClosable={true}
             >
-                <div className="w-full">
-                    <SessionsList
-                        accessToken={accessToken}
-                        setSessionId={handleSessionSelect}
-                    />
-                </div>
+                <SessionsList
+                    accessToken={accessToken}
+                    setSessionId={handleSessionSelect}
+                />
             </Modal>
 
-            <div>
-                { !sessionId ?
-                    <BaseInformationPanel accessToken={accessToken} base_information={null} submit_event={undefined}/>
-                    :
-                    <SessionContent session_id={sessionId} accessToken={accessToken} />
-                }
-            </div>
-        </div>
+            { !sessionId ?
+                <BaseInformationPanel 
+                    accessToken={accessToken} 
+                    base_information={null}
+                />
+                :
+                <SessionContent 
+                    session_id={sessionId} 
+                    accessToken={accessToken} 
+                />
+            }
+        </>
     );
 }
 
