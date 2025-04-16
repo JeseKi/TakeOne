@@ -92,8 +92,6 @@ const BaseInformationPanel: React.FC<BaseInformationProps> = (props: BaseInforma
   const navigate = useNavigate();
   const [loading, setLoading] = useState<boolean>(false);
   const [currentStep, setCurrentStep] = useState(0);
-  // const [hoverBackButton, setHoverBackButton] = useState<boolean>(false); // TODO: 文本悬浮时朝对应方向移动
-  // const [hoverNextButton, setHoverNextButton] = useState<boolean>(false);
 
   const [formData, setFormData] = useState<BaseInformation>(() => {
     if (base_information !== null) {
@@ -172,35 +170,45 @@ const BaseInformationPanel: React.FC<BaseInformationProps> = (props: BaseInforma
         <div>
           {currentStep > 0 && (
             <Button 
-              className={styles.skButton} 
+              className={`${styles.skButton} ${styles.prevButton}`}
               onClick={handlePrev} 
               disabled={loading} 
               style={{marginRight: 16}}
             >
-              <LeftCircleOutlined />
-              上一步
+              <span>
+                <LeftCircleOutlined style={{marginRight: 8}} />
+                上一步
+              </span>
             </Button>
           )}
           {currentStep < steps.length - 1 ? (
             <Button
               type="primary"
-              className={`${isCurrentStepFilled && !loading ? styles.skButton : styles.skButtonDisabled}`}
+              className={isCurrentStepFilled && !loading 
+                ? `${styles.skButton} ${styles.nextButton}` 
+                : styles.skButtonDisabled}
               disabled={!isCurrentStepFilled || loading}
               onClick={handleNext}
             >
-              下一步
-              <RightCircleOutlined />
+              <span>
+                下一步
+                <RightCircleOutlined style={{marginLeft: 8}} />
+              </span>
             </Button>
           ) : (
             <Button
               type="primary"
               loading={loading}
-              className={isCurrentStepFilled && !loading ? styles.skButton : styles.skButtonDisabled}
+              className={isCurrentStepFilled && !loading 
+                ? `${styles.skButton} ${styles.submitButton}` 
+                : styles.skButtonDisabled}
               disabled={!isCurrentStepFilled || loading}
               onClick={handleSubmit}
             >
-              提交
-              <UpCircleOutlined />
+              <span>
+                提交
+                <UpCircleOutlined style={{marginLeft: 8}} />
+              </span>
             </Button>
           )}
         </div>

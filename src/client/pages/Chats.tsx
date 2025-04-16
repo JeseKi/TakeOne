@@ -49,11 +49,11 @@ const Chat: React.FC<ChatsNavProps> = (props) => {
             />
 
             <Modal
-                title="聊天记录"
+                title="会话记录"
                 open={modalVisible}
                 onCancel={hideModal}
                 footer={null}
-                width="80%"
+                width="50%"
                 centered
                 destroyOnClose={false}
                 maskClosable={true}
