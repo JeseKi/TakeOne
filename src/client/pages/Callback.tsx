@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { GetTokenResponse, GetUserInfo } from '../Api';
+import { LoadingOutlined } from '@ant-design/icons';
 
 const Callback: React.FC = () => {
   const [searchParams] = useSearchParams();
@@ -50,7 +51,7 @@ const Callback: React.FC = () => {
       <div className="flex flex-col justify-center items-center min-h-screen">
         <h2 className="text-xl font-semibold mb-2">正在处理登录回调...</h2>
         <p className="text-gray-600 dark:text-gray-300">请稍候，正在验证身份并获取用户信息...</p>
-        <div className="mt-4 w-16 h-16 border-t-4 border-blue-500 border-solid rounded-full animate-spin"></div>
+        <LoadingOutlined className='text-lg lg:text-2xl 2xl:text-4xl' style={{color: '#219ebc'}}/>
       </div>
     );
   }

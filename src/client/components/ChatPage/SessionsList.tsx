@@ -1,6 +1,6 @@
-import { Alert, Empty, Spin, Card } from 'antd';
+import { Alert, Empty, Card } from 'antd';
 import { useEffect, useState } from 'react';
-import { MessageOutlined, PlusOutlined, HistoryOutlined } from '@ant-design/icons';
+import { MessageOutlined, PlusOutlined, HistoryOutlined , LoadingOutlined} from '@ant-design/icons';
 import { Typography, Skeleton } from 'antd';
 import { useNavigate } from 'react-router-dom';
 
@@ -51,8 +51,8 @@ export default function SessionsList(props: SessionsListProps) {
     if (loading) {
         return (
             <div className="flex flex-col items-center justify-center h-[200px] p-5">
-                <Spin size="large" />
-                <Text className="my-3 text-gray-600">正在获取对话列表...</Text>
+                <LoadingOutlined className='text-lg lg:text-2xl 2xl:text-4xl' style={{color: '#219ebc'}}/>
+                <Text className="my-3 text-gray-600">正在获取会话列表...</Text>
                 <Skeleton active paragraph={{ rows: 3 }} />
             </div>
         )
@@ -76,7 +76,7 @@ export default function SessionsList(props: SessionsListProps) {
             </div>
             
             <div className="flex justify-between items-center mb-4 p-2 px-2.5">
-                <Title level={5} className="m-0"><HistoryOutlined /> 对话历史</Title>
+                <Title level={5} className="m-0"><HistoryOutlined /> 会话历史</Title>
             </div>
             
             {showAlert && (
@@ -93,24 +93,23 @@ export default function SessionsList(props: SessionsListProps) {
                 <div className="flex flex-col items-center justify-center h-[200px] p-5">
                     <Empty
                         description={
-                            <span>还没有任何对话记录</span>
+                            <span>还没有任何会话记录</span>
                         }
                         image={Empty.PRESENTED_IMAGE_SIMPLE}
                     />
                 </div>
             ) : (
-                <div className="mt-2.5">
+                <div>
                     {sessionsList.map((item, index) => (
                         <Card
                             key={index}
                             hoverable
-                            className="border-none rounded-md mb-2 bg-transparent hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors shadow-none"
                             onClick={() => handleSessionClick(item.description)}
                         >
-                            <div className="flex items-center p-2 px-2.5">
+                            <div className="flex items-center">
                                 <MessageOutlined className="text-base text-gray-500 mr-2.5" />
                                 <div className="flex flex-col overflow-hidden">
-                                    <Text strong className="text-sm mb-0 whitespace-nowrap overflow-hidden text-ellipsis text-gray-700 dark:text-gray-300">{item.title}</Text>
+                                    <Text strong className="text-sm mb-0 whitespace-nowrap overflow-hidden text-ellipsis text-gray-700">{item.title}</Text>
                                     <Text type="secondary" className="text-xs mb-0 text-gray-500">{item.description.substring(0, 8)}...</Text>
                                 </div>
                             </div>

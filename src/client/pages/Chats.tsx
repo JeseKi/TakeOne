@@ -53,7 +53,7 @@ const Chat: React.FC<ChatsNavProps> = (props) => {
                 open={modalVisible}
                 onCancel={hideModal}
                 footer={null}
-                width="50%"
+                width={800}
                 centered
                 destroyOnClose={false}
                 maskClosable={true}

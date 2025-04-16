@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Button, Card, Modal, Divider, Tag } from 'antd';
-import { InfoCircleOutlined, TrophyOutlined, StopOutlined, LoadingOutlined } from '@ant-design/icons';
+import { InfoCircleOutlined, TrophyOutlined, StopOutlined } from '@ant-design/icons';
 
 import { ChoiceResponse, RoundResponse } from '../../Api';
 
@@ -170,7 +170,6 @@ const RoundCard: React.FC<RoundCardProps> = ({
                   <h3 className="m-0 p-0 text-lg">{currentChoices[0].major_name}</h3>
                   {currentChoices[0].is_winner_in_comparison === true && <TrophyOutlined style={{ color: '#52c41a' }} />}
                   {currentChoices[0].is_winner_in_comparison === false && <StopOutlined style={{ color: '#ff4d4f' }} />}
-                  {isLoading && <LoadingOutlined />}
                 </div>
                 {choice1Hover && (
                   <div className="absolute bottom-0 left-0 transform translate-y-full w-auto p-2 bg-white border border-gray-200 rounded shadow-md z-20 text-left">
@@ -200,7 +199,6 @@ const RoundCard: React.FC<RoundCardProps> = ({
                   <h3 className="m-0 p-0 text-lg">{currentChoices[1].major_name}</h3>
                   {currentChoices[1].is_winner_in_comparison === true && <TrophyOutlined style={{ color: '#52c41a' }} />}
                   {currentChoices[1].is_winner_in_comparison === false && <StopOutlined style={{ color: '#ff4d4f' }} />}
-                  {isLoading && <LoadingOutlined />}
                 </div>
                 {choice2Hover && (
                   <div className="absolute bottom-0 left-0 transform translate-y-full w-auto p-2 bg-white border border-gray-200 rounded shadow-md z-20 text-left">

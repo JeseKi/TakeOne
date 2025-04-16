@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { Card, Spin, Modal, message, Button } from 'antd';
+import { Card, Modal, message, Button } from 'antd';
+import { LoadingOutlined } from '@ant-design/icons';
 import { Markdown } from '@lobehub/ui';
 
 import {
@@ -14,7 +15,7 @@ import {
   GetChoicesResponse,
   GetRoundResponse
 } from '../../Api';
-import BaseInformationPanel, { BaseInformationDisplayCard } from '../BaseInfomation';
+import { BaseInformationDisplayCard } from '../BaseInfomation';
 import RoundList from './RoundList';
 
 import styles from './ChatPage.module.css';
@@ -209,7 +210,10 @@ const SessionContent: React.FC<SessionContentProps> = ({ session_id, accessToken
   };
   
   if (!sessionData) {
-    return <div className="flex justify-center items-center h-screen w-full"><Spin size="large" tip="加载中..." /></div>;
+    return (
+      <div className="flex justify-center items-center h-screen w-full">
+        <LoadingOutlined className='text-lg lg:text-2xl 2xl:text-4xl' style={{color: '#219ebc'}}/>
+      </div>);
   }
 
   return (

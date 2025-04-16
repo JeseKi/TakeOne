@@ -1,6 +1,6 @@
 // RoundList.tsx
 import React from 'react';
-import { Spin } from 'antd';
+import { LoadingOutlined } from '@ant-design/icons';
 import RoundCard from './RoundCard';
 import { RoundResponse, ChoiceResponse } from '../../Api';
 
@@ -27,7 +27,6 @@ const RoundList: React.FC<RoundListProps> = ({
         <RoundCard
           key={index}
           round={round}
-          // isLatest={index === rounds.length - 1}
           isActive={activeRoundIndex === undefined ? index === rounds.length - 1 : index === activeRoundIndex}
           onSelectChoice={onSelectChoice}
           latestChoices={index === rounds.length - 1 ? latestChoices : null}
@@ -38,7 +37,7 @@ const RoundList: React.FC<RoundListProps> = ({
       
       {isLoading && (
         <div className="flex justify-center py-7">
-          <Spin tip="加载中..." />
+          <LoadingOutlined className='text-lg lg:text-2xl 2xl:text-4xl' style={{color: '#219ebc'}}/>
         </div>
       )}
     </div>

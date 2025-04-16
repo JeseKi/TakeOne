@@ -161,7 +161,6 @@ const BaseInformationPanel: React.FC<BaseInformationProps> = (props: BaseInforma
               placeholder={q.placeholder}
               value={formData[q.name] || ''}
               onChange={handleChange}
-              readOnly={base_information !== null}
               className={`${styles.skTextarea} text-2xl`}
               autoSize={{ minRows: 3 }}
             />

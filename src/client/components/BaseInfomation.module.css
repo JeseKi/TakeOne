@@ -8,13 +8,16 @@
   background: rgba(255,255,255,0.95);
   outline: none;
   color: #22223b;
-  transition: box-shadow 0.2s, border-color 0.2s;
   box-shadow: none;
   font-size: 1rem;
+}
+.skTextarea:hover {
+  border-color: #8ecae6;
 }
 .skTextarea:focus {
   border-color: #8ecae6;
   box-shadow: 0 0 0 2px #8ecae655;
+  border-width: 5px;
 }
 
 .skButton {
