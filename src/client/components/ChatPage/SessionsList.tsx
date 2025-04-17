@@ -24,6 +24,11 @@ export default function SessionsList(props: SessionsListProps) {
         setSessionId(sessionId);
     }
 
+    const handleNewSessionClick = () => {
+        navigate('/chat');
+        setSessionId(null);
+    }
+
     if (loading) {
         return (
             <div className="flex flex-col items-center justify-center h-[200px] p-5">
@@ -43,7 +48,7 @@ export default function SessionsList(props: SessionsListProps) {
         <div className="p-2">
             <Button
                 className={`w-full m-2 ${styles.skPushButton}`}
-                onClick={() => setSessionId(null)}
+                onClick={() => handleNewSessionClick()}
             >
                 <PlusOutlined className="text-base mr-2.5" />
                 新建会话

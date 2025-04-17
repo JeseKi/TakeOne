@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Card, Modal, message, Button } from 'antd';
 import { LoadingOutlined } from '@ant-design/icons';
 import { Markdown } from '@lobehub/ui';
+import { motion, AnimatePresence } from 'framer-motion';
 
 import {
   GetSessionContent,
@@ -235,13 +236,24 @@ const SessionContent: React.FC<SessionContentProps> = ({ session_id, accessToken
         onClick={() => setShowModal(true)}
       />
 
-      {report && (
-        <div className="mb-24 md:w-3/4 lg:w-1/2 shadow-2xl mx-auto text-left">
-          <Card>
-            <Markdown>{renderReport()}</Markdown>
-          </Card>
-        </div>
-      )}
+      <AnimatePresence>
+        {report && (
+            <div className="md:w-3/4 lg:w-1/2 mx-auto text-left shadow-md mb-10 xl:mb-50">
+            <motion.div
+              key="report"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.3 }}
+              style={{ boxShadow: '0 0 10px #219ebc', borderRadius: '8px', marginBottom: '1.5rem' }}
+            >
+              <Card>
+                <Markdown>{renderReport()}</Markdown>
+              </Card>
+              </motion.div>
+            </div>
+        )}
+      </AnimatePresence>
 
       <Modal
         open={showModal}
