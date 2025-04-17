@@ -1,11 +1,17 @@
-import { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Input, Button, Card } from 'antd';
-import { LeftCircleOutlined, RightCircleOutlined, UpCircleOutlined } from '@ant-design/icons';
-
+import { CheckCircleOutlined, LeftCircleOutlined, RightCircleOutlined } from '@ant-design/icons';
 import { PostBaseInformation } from '../Api';
 import { useNavigate } from 'react-router-dom';
-
+import { motion, AnimatePresence } from 'framer-motion';
 import styles from './BaseInfomation.module.css';
+
+// Hook to get previous value
+function usePrevious<T>(value: T): T | undefined {
+  const ref = useRef<T | undefined>(undefined);
+  useEffect(() => { ref.current = value; }, [value]);
+  return ref.current;
+}
 
 // 问题配置
 const questions = [
@@ -149,24 +155,52 @@ const BaseInformationPanel: React.FC<BaseInformationProps> = (props: BaseInforma
     }
   };
 
+  const prevStep = usePrevious(currentStep);
+  const questionCount = steps[currentStep].length;
+  let yOffset = 0;
+  if (prevStep !== undefined) {
+    if (questionCount === 1) {
+      yOffset = prevStep < currentStep ? -10 : 10;
+    } else if (questionCount === 3) {
+      yOffset = prevStep < currentStep ? 10 : -10;
+    }
+  }
+
   return (
     <div className={`${styles.skContainer} w-4/5 sm:w-3/4 md:w-1/2 lg:w-1/3 mx-auto my-10`}>
       <Card className={styles.skCard}>
         <h1 className='text-2xl font-bold my-4'>基础信息表</h1>
-        {steps[currentStep].map((q) => (
-          <div key={q.name}>
-            <h3 className='text-lg font-medium my-2'>{q.label}</h3>
-            <Input.TextArea
-              name={q.name}
-              placeholder={q.placeholder}
-              value={formData[q.name] || ''}
-              onChange={handleChange}
-              className={`${styles.skTextarea} text-2xl`}
-              autoSize={{ minRows: 3 }}
-            />
-          </div>
-        ))}
-        <div>
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={currentStep}
+            initial={{ rotateY: 90, opacity: 0 }}
+            animate={{ rotateY: 0, opacity: 1 }}
+            exit={{ rotateY: -90, opacity: 0 }}
+            transition={{ duration: 0.5 }}
+            style={{ transformStyle: 'preserve-3d', perspective: 1000 }}
+          >
+            {steps[currentStep].map((q) => (
+              <div key={q.name}>
+                <h3 className='text-lg font-medium my-2'>{q.label}</h3>
+                <Input.TextArea
+                  name={q.name}
+                  placeholder={q.placeholder}
+                  value={formData[q.name] || ''}
+                  onChange={handleChange}
+                  className={`${styles.skTextarea} text-2xl`}
+                  autoSize={{ minRows: 3 }}
+                />
+              </div>
+            ))}
+          </motion.div>
+        </AnimatePresence>
+        <motion.div
+          key={`buttons-${currentStep}`}
+          initial={{ y: 0 }}
+          animate={{ y: yOffset }}
+          transition={{ type: 'spring', stiffness: 100, damping: 20, delay: 0.5 }}
+          style={{ display: 'flex', justifyContent: 'space-between', marginTop: 16 }}
+        >
           {currentStep > 0 && (
             <Button 
               className={`${styles.skButton} ${styles.prevButton}`}
@@ -206,11 +240,11 @@ const BaseInformationPanel: React.FC<BaseInformationProps> = (props: BaseInforma
             >
               <span>
                 提交
-                <UpCircleOutlined style={{marginLeft: 8}} />
+                <CheckCircleOutlined style={{marginLeft: 8}} />
               </span>
             </Button>
           )}
-        </div>
+        </motion.div>
       </Card>
     </div>
   );

@@ -228,7 +228,7 @@ const SessionContent: React.FC<SessionContentProps> = ({ session_id, accessToken
       />
 
       <Button 
-        className={`right-1 top-1 sm:right-2 sm:top-2 xl:right-10 xl:top-4 z-30 ${styles.skSecondButton}`}
+        className={`right-1 top-1 sm:right-2 sm:top-2 xl:right-10 xl:top-4 z-20 ${styles.skSecondButton}`}
         type='dashed'
         shape='circle'
         icon={<UserOutlined />}

@@ -8,7 +8,7 @@ interface RoundListProps {
   rounds: RoundResponse[];
   isLoading: boolean;
   latestChoices: [ChoiceResponse, ChoiceResponse] | null;
-  onSelectChoice: (selectedChoice: ChoiceResponse, otherChoice: ChoiceResponse) => void;
+  onSelectChoice: (selectedChoice: ChoiceResponse, otherChoice: ChoiceResponse) => Promise<void>;
   activeRoundIndex?: number;
   isSessionFinished?: boolean;
 }
@@ -27,7 +27,7 @@ const RoundList: React.FC<RoundListProps> = ({
         <RoundCard
           key={index}
           round={round}
-          isActive={activeRoundIndex === undefined ? index === rounds.length - 1 : index === activeRoundIndex}
+          roundIsActive={activeRoundIndex === undefined ? index === rounds.length - 1 : index === activeRoundIndex}
           onSelectChoice={onSelectChoice}
           latestChoices={index === rounds.length - 1 ? latestChoices : null}
           isLoading={isLoading}

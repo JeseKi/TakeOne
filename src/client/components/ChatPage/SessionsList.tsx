@@ -1,10 +1,12 @@
-import { Alert, Empty, Card } from 'antd';
+import { Alert, Empty, Card, Button } from 'antd';
 import { useEffect, useState } from 'react';
 import { MessageOutlined, PlusOutlined, HistoryOutlined , LoadingOutlined} from '@ant-design/icons';
 import { Typography, Skeleton } from 'antd';
 import { useNavigate } from 'react-router-dom';
 
 import { GetSessionsID } from '../../Api';
+
+import styles from './ChatPage.module.css';
 
 const { Title, Text } = Typography;
 
@@ -66,14 +68,14 @@ export default function SessionsList(props: SessionsListProps) {
     }) : [];
 
     return(
-        <div className="p-2 w-full">
-            <div 
-                className="flex items-center justify-start w-[calc(100%-16px)] m-2 p-2.5 px-3 border border-gray-200 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+        <div className="p-2">
+            <Button 
+                className={`w-full m-2 ${styles.skPushButton}`}
                 onClick={handleCreateNewSession}
             >
                 <PlusOutlined className="text-base mr-2.5" />
-                <span className="text-sm font-medium text-gray-800 dark:text-gray-200">新建会话</span>
-            </div>
+                新建会话
+            </Button>
             
             <div className="flex justify-between items-center mb-4 p-2 px-2.5">
                 <Title level={5} className="m-0"><HistoryOutlined /> 会话历史</Title>
@@ -105,12 +107,13 @@ export default function SessionsList(props: SessionsListProps) {
                             key={index}
                             hoverable
                             onClick={() => handleSessionClick(item.description)}
+                            className={styles.skPushButton}
                         >
                             <div className="flex items-center">
                                 <MessageOutlined className="text-base text-gray-500 mr-2.5" />
-                                <div className="flex flex-col overflow-hidden">
-                                    <Text strong className="text-sm mb-0 whitespace-nowrap overflow-hidden text-ellipsis text-gray-700">{item.title}</Text>
-                                    <Text type="secondary" className="text-xs mb-0 text-gray-500">{item.description.substring(0, 8)}...</Text>
+                                <div className={`flex flex-col overflow-hidden`}>
+                                    <strong className="text-sm mb-0 whitespace-nowrap overflow-hidden text-ellipsis text-gray-700">{item.title}</strong>
+                                    <p className="text-xs mb-0 text-gray-500">{item.description.substring(0, 8)}...</p>
                                 </div>
                             </div>
                         </Card>
