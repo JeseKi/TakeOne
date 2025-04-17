@@ -1,0 +1,26 @@
+/* Hero page button styles */
+.skHeroButton {
+  border-radius: 0.75rem;
+  font-weight: bold;
+  font-size: 1.125rem;
+  background: #8ecae6 !important;
+  color: #fff !important;
+  border: none;
+  cursor: pointer;
+}
+.skHeroButton:hover {
+  background: #219ebc !important;
+}
+
+/* Skip intro text button */
+.skHeroSkip {
+  color: #219ebc !important;
+  background: transparent !important;
+  border: none !important;
+  cursor: pointer;
+  padding: 0 !important;
+}
+.skHeroSkip:hover {
+  border-radius: 0.75rem;
+  border: 1px solid #219ebc !important;
+}

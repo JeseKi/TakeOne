@@ -5,6 +5,7 @@ import Callback from './pages/Callback';
 import { GetUserInfo } from './Api';
 import Chat from './pages/Chats';
 import Login from './pages/Login';
+import Hero from './pages/Hero';
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -42,11 +43,11 @@ function App() {
   return (
       <>
       <Routes>
+        <Route path="/" element={<Hero skipIntro={accessToken !== ''}/>} />
         <Route path="/login" element={<Login />} />
         <Route path="/callback" element={<Callback />} />
         {isAuthenticated ? (
           <>
-            <Route path="/" element={<Chat accessToken={accessToken} />} />
             <Route path="/chat/*" element={<Chat accessToken={accessToken} />} />
           </>
         ) : (

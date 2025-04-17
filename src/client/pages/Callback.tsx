@@ -29,7 +29,7 @@ const Callback: React.FC = () => {
         const userInfo = await GetUserInfo(accessToken);
         localStorage.setItem('userInfo', JSON.stringify(userInfo));
 
-        window.location.href = '/';
+        window.location.href = '/chat';
       } catch (error: any) {
         console.error('认证失败:', error);
         setError(`认证失败: ${error.message}`);
