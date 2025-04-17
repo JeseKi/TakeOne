@@ -6,7 +6,6 @@ import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import styles from './BaseInfomation.module.css';
 
-// Hook to get previous value
 function usePrevious<T>(value: T): T | undefined {
   const ref = useRef<T | undefined>(undefined);
   useEffect(() => { ref.current = value; }, [value]);
@@ -90,10 +89,12 @@ interface BaseInformation {
 interface BaseInformationProps {
   accessToken: string;
   base_information: BaseInformation | null;
+  // 提交成功后回调，用于刷新会话列表
+  onSubmitSuccess?: () => void;
 }
 
 const BaseInformationPanel: React.FC<BaseInformationProps> = (props: BaseInformationProps) => {
-  const { accessToken , base_information } = props;
+  const { accessToken, base_information, onSubmitSuccess } = props;
 
   const navigate = useNavigate();
   const [loading, setLoading] = useState<boolean>(false);
@@ -135,6 +136,10 @@ const BaseInformationPanel: React.FC<BaseInformationProps> = (props: BaseInforma
     try {
       const session_uuid = await PostBaseInformation(formData, accessToken);
       console.log('提交成功:', formData);
+      // 调用父级刷新会话列表
+      if (onSubmitSuccess) {
+        await onSubmitSuccess();
+      }
       navigate(`/chat?session=${session_uuid}`);
     } catch (error) {
         console.error('提交失败:', error)

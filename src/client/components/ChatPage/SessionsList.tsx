@@ -1,17 +1,12 @@
-import { Alert, Empty, Card, Button } from 'antd';
-import { useEffect, useState } from 'react';
-import { MessageOutlined, PlusOutlined, HistoryOutlined , LoadingOutlined} from '@ant-design/icons';
-import { Typography, Skeleton } from 'antd';
+import { MessageOutlined, PlusOutlined, HistoryOutlined } from '@ant-design/icons';
+import { Typography, Skeleton, Button, Empty, Card, Alert } from 'antd';
 import { useNavigate } from 'react-router-dom';
-
-import { GetSessionsID } from '../../Api';
-
 import styles from './ChatPage.module.css';
 
-const { Title, Text } = Typography;
-
 interface SessionsListProps {
-    accessToken: string;
+    sessionsId: string[] | null;
+    loading: boolean;
+    errorMessage?: string | null;
     setSessionId: (sessionId: string | null) => void;
 }
 
@@ -21,45 +16,20 @@ interface SessionItem {
 }
 
 export default function SessionsList(props: SessionsListProps) {
-    const { accessToken, setSessionId } = props;
-    const [showAlert, setShowAlert] = useState<boolean>(false);
-    const [sessionsId, setSessionsId] = useState<string[] | null>(null);
-    const [loading, setLoading] = useState<boolean>(true);
-    const [errorMessage, setErrorMessage] = useState<string>('获取对话列表失败');
-
-    const navigate = useNavigate(); 
-
-    useEffect(() => {
-        GetSessionsID(accessToken).then((result) => {
-            setSessionsId(result);
-            setLoading(false);
-        }).catch((error) => {
-            console.error('获取对话列表失败:', error);
-            setErrorMessage('获取对话列表失败: ' + error.message);
-            setShowAlert(true);
-            setLoading(false);
-        });
-    }, [accessToken, setSessionsId]);
+    const { sessionsId, loading, errorMessage, setSessionId } = props;
+    const navigate = useNavigate();
 
     const handleSessionClick = (sessionId: string) => {
         navigate(`/chat?session=${sessionId}`);
         setSessionId(sessionId);
-        
-    }
-
-    const handleCreateNewSession = () => {
-        navigate('/chat');
-        setSessionId(null);
     }
 
     if (loading) {
         return (
             <div className="flex flex-col items-center justify-center h-[200px] p-5">
-                <LoadingOutlined className='text-lg lg:text-2xl 2xl:text-4xl' style={{color: '#219ebc'}}/>
-                <Text className="my-3 text-gray-600">正在获取会话列表...</Text>
                 <Skeleton active paragraph={{ rows: 3 }} />
             </div>
-        )
+        );
     }
 
     const sessionsList: SessionItem[] = sessionsId ? sessionsId.map((sessionId: string, index: number): SessionItem => {
@@ -69,31 +39,30 @@ export default function SessionsList(props: SessionsListProps) {
         };
     }) : [];
 
-    return(
+    return (
         <div className="p-2">
-            <Button 
+            <Button
                 className={`w-full m-2 ${styles.skPushButton}`}
-                onClick={handleCreateNewSession}
+                onClick={() => setSessionId(null)}
             >
                 <PlusOutlined className="text-base mr-2.5" />
                 新建会话
             </Button>
-            
+
             <div className="flex justify-between items-center mb-4 p-2 px-2.5">
-                <Title level={5} className="m-0"><HistoryOutlined /> 会话历史</Title>
+                <Typography.Title level={5} className="m-0"><HistoryOutlined /> 会话历史</Typography.Title>
             </div>
-            
-            {showAlert && (
+
+            {errorMessage && (
                 <Alert
                     type='error'
                     message={errorMessage}
-                    closable
-                    onClose={() => setShowAlert(false)}
+                    showIcon
                     className="m-2.5 rounded-md"
                 />
             )}
-            
-            {!sessionsId || sessionsId.length === 0 ? (
+
+            {!sessionsList.length ? (
                 <div className="flex flex-col items-center justify-center h-[200px] p-5">
                     <Empty
                         description={
