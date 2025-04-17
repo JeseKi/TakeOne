@@ -43,6 +43,8 @@ export default function SessionsList(props: SessionsListProps) {
 
     const handleSessionClick = (sessionId: string) => {
         navigate(`/chat?session=${sessionId}`);
+        setSessionId(sessionId);
+        
     }
 
     const handleCreateNewSession = () => {
