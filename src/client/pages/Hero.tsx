@@ -179,7 +179,7 @@ const Hero: React.FC<HeroProps> = ({ skipIntro }) => {
           <span className='m-3'>跳过介绍</span>
         </Button>
       )}
-      <h1 className="mb-4 text-4xl font-bold text-[#219ebc] z-10">TakeOne</h1>
+      <a href='/' className="mb-4 text-4xl font-bold text-[#219ebc] z-10">TakeOne</a>
       <div ref={scrollRef} className={`w-9/10 xl:max-w-3xl max-h-[320px] bg-white/85 rounded-2xl shadow-lg p-5 border-[5px] border-[#8ecae6] overflow-y-auto ${styles.heroScroll}`}>
         <AnimatePresence initial={false} mode="popLayout">
           {lines.map((ln, i) => (

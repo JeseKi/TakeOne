@@ -218,7 +218,7 @@ const SessionContent: React.FC<SessionContentProps> = ({ session_id, accessToken
   }
 
   return (
-    <div className="p-5">
+    <div className="p-5 w-[100vw]">
       <RoundList
         rounds={rounds}
         isLoading={loadingChoices}

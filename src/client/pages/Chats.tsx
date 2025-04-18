@@ -61,7 +61,7 @@ const Chat: React.FC<ChatsNavProps> = (props) => {
     };
 
     return (
-        <>
+        <div className="relative flex flex-col items-center justify-center min-h-screen select-none">
             {sessionsId && sessionsId.length > 0 && (
                 <Button
                     className={`left-1 top-1 sm:left-2 sm:top-2 xl:left-10 xl:top-4 z-30 ${styles.skSecondButton}`}
@@ -91,18 +91,21 @@ const Chat: React.FC<ChatsNavProps> = (props) => {
             </Modal>
 
             { !sessionId ?
-                <BaseInformationPanel 
-                    accessToken={accessToken} 
-                    base_information={null}
-                    onSubmitSuccess={() => fetchSessions(accessToken, setSessionsId, setSessionsError, setSessionsLoading)}
-                />
+                <>
+                    <BaseInformationPanel 
+                        accessToken={accessToken} 
+                        base_information={null}
+                        onSubmitSuccess={() => fetchSessions(accessToken, setSessionsId, setSessionsError, setSessionsLoading)}
+                    />
+                    <a href='/' className="absolute right-1 top-1 sm:right-2 sm:top-2 xl:right-10 xl:top-4 z-20 text-2xl font-bold text-[#219ebc]">TakeOne</a>
+                </>
                 :
                 <SessionContent 
                     session_id={sessionId} 
                     accessToken={accessToken} 
                 />
             }
-        </>
+        </div>
     );
 }
 

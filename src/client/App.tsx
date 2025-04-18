@@ -6,6 +6,7 @@ import { GetUserInfo } from './Api';
 import Chat from './pages/Chats';
 import Login from './pages/Login';
 import Hero from './pages/Hero';
+import { LoadingOutlined } from '@ant-design/icons';
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -42,7 +43,11 @@ function App() {
   }, [accessToken]);
 
   if (isChecking) {
-    return <div className="flex justify-center items-center min-h-screen text-lg">正在检查认证状态...</div>;
+    return (
+      <div className="flex justify-center items-center h-screen w-full">
+        <LoadingOutlined className='text-lg lg:text-2xl 2xl:text-4xl' style={{color: '#219ebc'}}/>
+      </div>
+    );
   }
 
   return (
