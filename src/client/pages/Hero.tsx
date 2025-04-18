@@ -55,7 +55,7 @@ const storyScript: StoryItem[] = [
   { type: 'text', content: '心理学可能有趣但就业需要耐心；' },
   { type: 'text', content: '生物学可能探索神秘但也需长期投入...' },
   { type: 'text', content: '关键在于，哪些是*相对*更能接受，或者说，*最不反感*的？' },
-  { type: 'text', content: 'TakeOne 的目的，就是帮你识别并避开那些你真正“踩不了”的坑。' },
+  { type: 'text', content: 'TakeOne 的目的，就是帮你识别并避开那些你真正“*踩不了*”的坑。' },
   { type: 'text', content: '它引导你找到的，不一定是完美的梦想，但会是一个你觉得“还行”、“可以接受”的现实路径。' },
   { type: 'text', content: '一个在你“厌恶”底线之上的选择。' },
   { type: 'text', content: '准备好，开始这场“*排除法*”探索了吗？', isEnd: true }
@@ -173,7 +173,7 @@ const Hero: React.FC<HeroProps> = ({ skipIntro }) => {
       {skipIntro && (
         <Button
           type="text"
-          className={`absolute top-4 right-4 xl:top-30 xl:left-80 ${styles.skHeroSkip}`}
+          className={`relative top-10 left-30 xl:top-10 xl:left-80 ${styles.skHeroSkip}`}
           onClick={() => navigate('/chat')}
         >
           <span className='m-3'>跳过介绍</span>
