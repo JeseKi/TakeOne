@@ -23,4 +23,35 @@
 .skHeroSkip:hover {
   border-radius: 0.75rem;
   border: 1px solid #219ebc !important;
+  background: rgba(255, 255, 255, 0.3) !important;
+}
+.dialogBox {
+  background: rgba(255,255,255,0.94);
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+  width: 80%;
+  max-width: 700px;
+  padding: 40px;
+  position: relative;
+  z-index: 1;
+  border-top: 3px solid #007bff;
+  text-align: center;
+  backdrop-filter: blur(1.5px);
+  max-height: 320px;
+  overflow-y: auto;
+}
+.heroBackground .dialogBox::-webkit-scrollbar {
+  width: 8px;
+}
+.heroBackground .dialogBox::-webkit-scrollbar-thumb {
+  background-color: rgba(248,250,252,0.6);
+  border-radius: 4px;
+}
+
+.heroScroll::-webkit-scrollbar {
+  width: 8px;
+}
+.heroScroll::-webkit-scrollbar-thumb {
+  background-color: rgba(248, 250, 252, 0.6);
+  border-radius: 4px;
 }

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from 'antd';
+
 import styles from './Hero.module.css';
 
 interface StoryItem {
@@ -16,13 +17,13 @@ interface StoryItem {
 const storyScript: StoryItem[] = [
   { type: 'text', content: '你正在尝试选择一个未来……' },
   { type: 'text', content: '一个专业。一份职业。' },
-  { type: 'text', content: '也许还想找到那个你真正热爱的东西。' },
+  { type: 'text', content: '也许还想找到那个你 *真正热爱* 的东西。' },
   { type: 'text', content: '但说实话...' },
-  { type: 'text', content: '那个“完美”的选择，真的存在吗？🤔' },
+  { type: 'text', content: '那个“*完美*”的选择，真的存在吗？🤔' },
   { type: 'text', content: '就像函数逼近它的极限，你可以无限接近…… 但也许永远无法真正 *到达* 那一点。' },
   { type: 'text', content: '那么，如果我们不再追逐那个不可能呢？' },
-  { type: 'text', content: '如果我们不再寻找“最好”，而是专注于避免“最坏”呢？' },
-  { type: 'text', content: '你知道“推荐算法”吗？就像抖音、B站用的那种。' },
+  { type: 'text', content: '如果我们不再寻找“*最好*”，而是专注于避免“*最坏*”呢？' },
+  { type: 'text', content: '你知道“*推荐算法*”吗？就像抖音、B站用的那种。' },
   { type: 'choice', options: [
       { text: '大概知道', next: 'algo_known' },
       { text: '不太了解', next: 'algo_unknown' }
@@ -31,14 +32,14 @@ const storyScript: StoryItem[] = [
   { type: 'label', id: 'algo_unknown' },
   { type: 'text', content: '没关系。简单说，它们会分析你看过什么、点过什么赞...' },
   { type: 'text', content: '然后不断给你推“猜你喜欢”的东西，让你一直刷下去。' },
-  { type: 'text', content: '不一定懂你，但很懂怎么留住你。就像这个对话框，是不是也吸引你点下去了？😉' },
+  { type: 'text', content: '不一定懂你，但*很懂怎么留住你*。就像这个对话框，是不是也吸引你点下去了？😉' },
   { type: 'jump', to: 'algo_cont' },
   { type: 'label', id: 'algo_known' },
   { type: 'text', content: '很好。它们不总推荐你 *最爱* 的，但总能推荐些你 *愿意* 看下去的，对吧？' },
   { type: 'text', content: '它们很擅长提供“还行”的选择，同时避开你明显讨厌的东西。' },
   { type: 'label', id: 'algo_cont' },
   { type: 'text', content: 'TakeOne 就借鉴了这个思路，但用在了你的未来选择上。' },
-  { type: 'text', content: '我们不问“你热爱什么？” —— 因为答案常常是“我不知道”。' },
+  { type: 'text', content: '我们不问“*你热爱什么*？” —— 因为答案常常是“*我不知道*”。' },
   { type: 'text', content: '相反，我们会更关注...' },
   { type: 'text', content: '那些你 *绝对无法忍受* 的事情。' },
   { type: 'text', content: '比如，高强度加班 (996)，你能接受吗？' },
@@ -57,7 +58,7 @@ const storyScript: StoryItem[] = [
   { type: 'text', content: 'TakeOne 的目的，就是帮你识别并避开那些你真正“踩不了”的坑。' },
   { type: 'text', content: '它引导你找到的，不一定是完美的梦想，但会是一个你觉得“还行”、“可以接受”的现实路径。' },
   { type: 'text', content: '一个在你“厌恶”底线之上的选择。' },
-  { type: 'text', content: '准备好，开始这场“排除法”探索了吗？', isEnd: true }
+  { type: 'text', content: '准备好，开始这场“*排除法*”探索了吗？', isEnd: true }
 ];
 
 type HeroProps = { skipIntro?: boolean };
@@ -85,7 +86,6 @@ const Hero: React.FC<HeroProps> = ({ skipIntro }) => {
    */
   const startTyping = (text: string, endFlag?: boolean) => {
     setIsTyping(true);
-    // 新增空行占位
     setLines(prev => [...prev, '']);
     let idx = 0;
     const nextChar = () => {
@@ -157,8 +157,19 @@ const Hero: React.FC<HeroProps> = ({ skipIntro }) => {
     localStorage.setItem('isIntroDone', 'true');
   }
 
+  const renderEmphasis = (text: string) => {
+    const parts = text.split(/(\*[^*]+\*)/g);
+    return parts.map((part, idx) => {
+      if (part.startsWith('*') && part.endsWith('*')) {
+        const content = part.slice(1, -1);
+        return <span key={idx} className="text-[#219ebc]">{content}</span>;
+      }
+      return <React.Fragment key={idx}>{part}</React.Fragment>;
+    });
+  };
+
   return (
-    <div className="relative flex flex-col items-center justify-start min-h-screen bg-[#e9eef2] select-none" onClick={handleClickNext}>
+    <div className="relative flex flex-col items-center justify-center min-h-screen select-none" onClick={handleClickNext}>
       {skipIntro && (
         <Button
           type="text"
@@ -168,8 +179,8 @@ const Hero: React.FC<HeroProps> = ({ skipIntro }) => {
           <span className='m-3'>跳过介绍</span>
         </Button>
       )}
-      <h1 className="mt-16 text-4xl font-bold text-[#219ebc] z-10">TakeOne</h1>
-      <div ref={scrollRef} className="w-[95%] max-w-3xl max-h-[320px] bg-white/85 rounded-2xl mt-8 shadow-lg p-5 border-[1.5px] border-[#8ecae6] overflow-y-auto hero-scroll">
+      <h1 className="mb-4 text-4xl font-bold text-[#219ebc] z-10">TakeOne</h1>
+      <div ref={scrollRef} className={`w-9/10 xl:max-w-3xl max-h-[320px] bg-white/85 rounded-2xl shadow-lg p-5 border-[5px] border-[#8ecae6] overflow-y-auto ${styles.heroScroll}`}>
         <AnimatePresence initial={false} mode="popLayout">
           {lines.map((ln, i) => (
             <motion.div
@@ -181,16 +192,14 @@ const Hero: React.FC<HeroProps> = ({ skipIntro }) => {
               transition={{ duration: 0.3 }}
               className="bg-[#219ebc]/10 text-[#333] text-base rounded px-4 py-2 mb-2"
             >
-              {ln}
+              {renderEmphasis(ln)}
             </motion.div>
           ))}
         </AnimatePresence>
       </div>
-      {!skipIntro && !waitingChoice && !isTyping && (
-        <div className="mt-2 text-sm text-[#219ebc] animate-pulse">点击继续...</div>
-      )}
+      <div className={`mt-3 text-sm text-[#219ebc] animate-pulse hover:cursor-pointer ${(!skipIntro && !waitingChoice && !isTyping) ? '' : 'invisible'}`}>点击继续...</div>
       {options && (
-        <div className="mt-6 flex flex-col items-center gap-4">
+        <div className="flex flex-col items-center gap-4">
           {options.map((opt, i) => (
             <Button key={i} className={styles.skHeroButton} onClick={() => handleOption(opt)}>
               {opt.text}
