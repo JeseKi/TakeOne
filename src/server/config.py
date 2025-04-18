@@ -1,5 +1,6 @@
 import os
 from pathlib import Path
+import json
 
 from dotenv import load_dotenv
 load_dotenv(Path.cwd() / ".env")
@@ -16,3 +17,5 @@ CASDOOR_TOKEN_ENDPOINT: str = os.environ.get("CASDOOR_TOKEN_ENDPOINT")
 CASDOOR_APP_NAME: str = os.environ.get("CASDOOR_APP_NAME")
 CASDOOR_ORGANIZATION_NAME: str = os.environ.get("CASDOOR_ORGANIZATION_NAME")
 ALLOW_ORIGINS: list[str] = os.environ.get("ALLOW_ORIGINS", "*").split(",")
+
+MAJOR_TREE: dict[str, list[str]] = json.load(open(Path.cwd() / "majors.json"))

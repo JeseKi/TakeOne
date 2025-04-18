@@ -16,20 +16,7 @@ from database.unit_of_work import UnitOfWork
 from .jwt_utils import get_current_user
 from schemas import UserInfo, Report, MajorChoiceRequest, PostChoicesResponse, GetChoicesResponse, GetRoundResponse, GenerrateType, ChoiceResponse
 from llm import gen_majors_reveal, gen_wisdom_report
-
-majors = {"计算机类", "心理学类", "教育学类", "历史学类", "医学", "文学", "数学类", "物理学类"}
-
-# 专业静态子专业映射
-MAJOR_TREE = {
-    "计算机类": ["软件工程", "人工智能", "网络安全"],
-    "心理学类": ["发展心理学", "临床心理学"],
-    "教育学类": ["学前教育", "教育技术学"],
-    "历史学类": ["考古学", "历史文献学"],
-    "医学": ["临床医学", "口腔医学"],
-    "文学": ["汉语言文学", "比较文学"],
-    "数学类": ["应用数学", "统计学"],
-    "物理学类": ["理论物理", "核物理"]
-}
+from config import MAJOR_TREE
 
 def get_next_majors(major_name: str) -> list[str]:
     """返回给定专业的子专业列表，如果没有则返回空列表"""
@@ -232,7 +219,7 @@ async def get_round(session_id: str, db: AsyncSession = Depends(get_db), user: U
         next_round_num = 1
         appearance_index_1 = 0
         appearance_index_2 = 1
-        current_round_majors = list(majors)
+        current_round_majors = list(MAJOR_TREE.keys())
         
         if len(session.rounds) >= 1:
             next_round_num = session.current_round_number + 1
@@ -244,7 +231,7 @@ async def get_round(session_id: str, db: AsyncSession = Depends(get_db), user: U
                 # 如果没有下一轮专业，这种情况理论上不应该发生，因为应该已经生成报告
                 logger.warning(f"[get_round] 警告：上一轮没有产生下一轮专业，但仍然调用了get_round")
                 winners = [c.major_name for c in session.rounds[-1].appearances if c.is_winner_in_comparison]
-                current_round_majors = winners if winners else list(majors)
+                current_round_majors = winners if winners else list(MAJOR_TREE.keys())
             
         # 确保 current_round_majors 至少有两个元素，否则无法进行比较
         if len(current_round_majors) < 2:
