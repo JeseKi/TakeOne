@@ -4,7 +4,7 @@ from loguru import logger
 import random
 import json
 
-from database.models import SessionStatus, RoundStatus
+from database.models import SessionStatus, RoundStatus, Round
 from database.base import get_db
 from database.crud import (
     UpdateSession, CreateRound, UpdateRound, 
@@ -18,6 +18,66 @@ from schemas import UserInfo, Report, MajorChoiceRequest, PostChoicesResponse, G
 from llm import gen_majors_reveal, gen_wisdom_report
 
 majors = {"计算机类", "心理学类", "教育学类", "历史学类", "医学", "文学", "数学类", "物理学类"}
+
+# 专业静态子专业映射
+MAJOR_TREE = {
+    "计算机类": ["软件工程", "人工智能", "网络安全"],
+    "心理学类": ["发展心理学", "临床心理学"],
+    "教育学类": ["学前教育", "教育技术学"],
+    "历史学类": ["考古学", "历史文献学"],
+    "医学": ["临床医学", "口腔医学"],
+    "文学": ["汉语言文学", "比较文学"],
+    "数学类": ["应用数学", "统计学"],
+    "物理学类": ["理论物理", "核物理"]
+}
+
+def get_next_majors(major_name: str) -> list[str]:
+    """返回给定专业的子专业列表，如果没有则返回空列表"""
+    return MAJOR_TREE.get(major_name, [])
+
+def get_winners_and_next_majors(round: Round) -> tuple[list[str], list[str]]:
+    """
+    根据当前轮次确定胜出者和下一轮专业
+    
+    Args:
+        round: 当前轮次对象
+        
+    Returns:
+        tuple: (胜出者列表, 下一轮专业列表)
+            - 如果有唯一胜出者且有子专业，返回 ([胜出者], [子专业列表])
+            - 如果有唯一胜出者但无子专业，返回 ([胜出者], [])
+            - 如果有多个胜出者，返回 ([胜出者列表], [胜出者列表])
+    """
+    # 获取当前轮次的胜出者（包括明确标记为胜出的和轮空晋级的）
+    # 1. 获取已明确标记为胜出的专业
+    explicit_winners = [choice.major_name for choice in round.appearances if choice.is_winner_in_comparison is True]
+    
+    # 2. 获取所有已参与比较的专业
+    compared_majors = {choice.major_name for choice in round.appearances if choice.is_winner_in_comparison is not None}
+    
+    # 3. 获取未参与比较的专业（轮空的）
+    uncompared_majors = set(round.current_round_majors) - compared_majors
+    
+    # 4. 合并明确胜出的和轮空的专业作为最终胜出者
+    winners = explicit_winners + list(uncompared_majors)
+    
+    logger.debug(f"[get_winners_and_next_majors] 当前轮次明确胜出者: {explicit_winners}, 轮空专业: {uncompared_majors}, 最终胜出者: {winners}")
+    
+    # 如果只有一个胜出者，检查是否有子专业
+    if len(winners) == 1:
+        winner = winners[0]
+        child_majors = get_next_majors(winner)
+        logger.debug(f"[get_winners_and_next_majors] 唯一胜出者 {winner} 的子专业: {child_majors}")
+        
+        # 如果有子专业，下一轮使用子专业
+        if child_majors:
+            return winners, child_majors
+        # 如果没有子专业，返回空列表作为下一轮专业，表示应该结束会话
+        return winners, []
+    
+    # 如果有多个胜出者，下一轮使用这些胜出者
+    logger.debug(f"[get_winners_and_next_majors] 多个胜出者: {winners}，下一轮将继续比较这些专业")
+    return winners, winners
 
 options_router = APIRouter()
 
@@ -43,14 +103,21 @@ async def post_choices(session_id: str,
         last_round = updated_session.rounds[-1]
         
         if len(last_round.current_round_majors) == 2 and len(last_round.appearances) == 2:
+            # 决胜，本层获胜专业
+            winner_name = last_round.appearances[-1].major_name if last_round.appearances[-1].is_winner_in_comparison else last_round.appearances[-2].major_name
+            # 判断是否有子专业
+            child_majors = get_next_majors(winner_name)
+            if child_majors:
+                # 进入下一层
+                await update_session(db, UpdateSession(session_id=session_id, current_round_number=last_round.round_number + 1))
+                return PostChoicesResponse(generate_type=GenerrateType.ROUND)
+            # 无子专业，结束并生成报告
             await update_session(db, UpdateSession(session_id=session_id, 
                                                    current_round_number=last_round.round_number + 1, 
                                                    status=SessionStatus.FINISHED, 
-                                                   final_major_name=last_round.appearances[-1].major_name if last_round.appearances[-1].is_winner_in_comparison else last_round.appearances[-2].major_name
+                                                   final_major_name=winner_name
                                                    ))
-            return PostChoicesResponse(
-                generate_type=GenerrateType.REPORT
-            )
+            return PostChoicesResponse(generate_type=GenerrateType.REPORT)
             
         appeared_majors = {choice.major_name for choice in last_round.appearances if choice.is_winner_in_comparison is not None}
         unappear_majors = set(last_round.current_round_majors) - appeared_majors
@@ -165,14 +232,26 @@ async def get_round(session_id: str, db: AsyncSession = Depends(get_db), user: U
         next_round_num = 1
         appearance_index_1 = 0
         appearance_index_2 = 1
-        current_round_majors = set(majors)
+        current_round_majors = list(majors)
         
         if len(session.rounds) >= 1:
             next_round_num = session.current_round_number + 1
-            current_round_majors = {choice.major_name for choice in session.rounds[-1].appearances 
-                                   if choice.is_winner_in_comparison}
+            _, next_majors = get_winners_and_next_majors(session.rounds[-1])
             
-        round_create = CreateRound(session_id=session_id, round_number=next_round_num, current_round_majors=current_round_majors)
+            if next_majors:
+                current_round_majors = next_majors
+            else:
+                # 如果没有下一轮专业，这种情况理论上不应该发生，因为应该已经生成报告
+                logger.warning(f"[get_round] 警告：上一轮没有产生下一轮专业，但仍然调用了get_round")
+                winners = [c.major_name for c in session.rounds[-1].appearances if c.is_winner_in_comparison]
+                current_round_majors = winners if winners else list(majors)
+            
+        # 确保 current_round_majors 至少有两个元素，否则无法进行比较
+        if len(current_round_majors) < 2:
+            logger.error(f"[get_round] 错误：下一轮专业数量不足，无法进行比较: {current_round_majors}")
+            raise HTTPException(status_code=400, detail=f"下一轮专业数量不足，无法进行比较: {current_round_majors}")
+            
+        round_create = CreateRound(session_id=session_id, round_number=next_round_num, current_round_majors=set(current_round_majors))
         session_update = UpdateSession(session_id=session_id, current_round_number=next_round_num)
         new_round = await create_round(db, round_create, transaction=transaction)
         await update_session(db, session_update, transaction=transaction)
@@ -321,6 +400,11 @@ async def save_choice_and_generate_next(
                 }
             
             # 步骤2: 保存用户选择
+            last_round_before = session.rounds[-1]
+            logger.debug(f"[save_and_next] 更新前 last_round uuid={last_round_before.uuid}, appearances={last_round_before.appearances}, current_round_majors={last_round_before.current_round_majors}")
+            choice_ids = [c.major_id for c in choice_request.choices]
+            choice_results = [c.is_winner_in_comparison for c in choice_request.choices]
+            logger.debug(f"[save_and_next] 将要更新的 choices: ids={choice_ids}, winners={choice_results}")
             if choice_request.choices:
                 update_choice_1 = UpdateChoice(
                     uuid=choice_request.choices[0].major_id, 
@@ -331,22 +415,24 @@ async def save_choice_and_generate_next(
                     is_winner_in_comparison=choice_request.choices[1].is_winner_in_comparison
                 )
                 await update_choices(db, (update_choice_1, update_choice_2), transaction=uow.transaction)
+                logger.debug("[save_and_next] update_choices 执行完毕")
             
             # 步骤3: 获取更新后的会话，判断下一步操作
             updated_session = await get_session(db, session_id, user.id, transaction=uow.transaction)
             last_round = updated_session.rounds[-1]
             
             # 检查是否需要生成报告（最后一轮）
-            if len(last_round.current_round_majors) == 2 and len(last_round.appearances) == 2:
+            winners, next_majors = get_winners_and_next_majors(last_round)
+            
+            if len(next_majors) == 0:
+                # 无子专业，结束并生成报告
                 await update_session(db, UpdateSession(
-                    session_id=session_id, 
-                    current_round_number=last_round.round_number + 1, 
-                    status=SessionStatus.FINISHED, 
+                    session_id=session_id,
+                    current_round_number=last_round.round_number + 1,
+                    status=SessionStatus.FINISHED,
+                    final_major_name=winners[0]
                 ), transaction=uow.transaction)
-                
-                # 生成报告
                 report_response = await gen_report(session_id, user, db, transaction=uow.transaction)
-                
                 return {
                     "status": "success",
                     "operation": "GENERATE_REPORT",
@@ -369,6 +455,7 @@ async def save_choice_and_generate_next(
                 # 处理轮空晋级情况
                 if len(unappear_majors) == 1:
                     remaining_major = list(unappear_majors)[0]
+                    logger.debug(f"[save_and_next] auto-win remaining_major={remaining_major}")
                     auto_win_choice = CreateChoice(
                         round_id=last_round.uuid,
                         session_id=session_id,
@@ -377,24 +464,47 @@ async def save_choice_and_generate_next(
                         appearance_index=len(last_round.appearances)
                     )
                     new_choices = await create_choices(db, (auto_win_choice, auto_win_choice), user.id, transaction=uow.transaction)
+                    logger.debug(f"[save_and_next] create_choices 返回 new_choices uuids={[c.uuid for c in new_choices]}")
                     auto_win_update = UpdateChoice(
                         uuid=new_choices[0].uuid,
                         is_winner_in_comparison=True
                     )
+                    logger.debug(f"[save_and_next] auto-win update_choices 将更新 uuid={new_choices[0].uuid}")
                     await update_choices(db, (auto_win_update, auto_win_update), transaction=uow.transaction)
+                    logger.debug("[save_and_next] auto-win update_choices 执行完毕")
                 
                 # 更新轮次状态
                 round_update = UpdateRound(round_id=last_round.uuid, status=RoundStatus.COMPLETED)
                 await update_round(db, round_update, transaction=uow.transaction)
                 
-                # 生成新一轮
-                new_round = await get_round(session_id, db, user, transaction=uow.transaction)
+                # 获取更新后的轮次，以便确定胜出者和下一步操作
+                updated_round = (await get_session(db, session_id, user.id, transaction=uow.transaction)).rounds[-1]
+                winners, next_majors = get_winners_and_next_majors(updated_round)
+                logger.debug(f"[save_and_next] 轮次完成后，胜出者: {winners}, 下一轮专业: {next_majors}")
                 
-                return {
-                    "status": "success",
-                    "operation": "GENERATE_ROUND",
-                    "data": new_round
-                }
+                # 根据下一轮专业情况决定下一步操作
+                if next_majors:
+                    # 有下一轮专业，生成新一轮
+                    new_round = await get_round(session_id, db, user, transaction=uow.transaction)
+                    return {
+                        "status": "success",
+                        "operation": "GENERATE_ROUND",
+                        "data": new_round
+                    }
+                else:
+                    # 无下一轮专业，结束并生成报告
+                    await update_session(db, UpdateSession(
+                        session_id=session_id,
+                        current_round_number=last_round.round_number + 1,
+                        status=SessionStatus.FINISHED,
+                        final_major_name=winners[0] if winners else None
+                    ), transaction=uow.transaction)
+                    report_response = await gen_report(session_id, user, db, transaction=uow.transaction)
+                    return {
+                        "status": "success",
+                        "operation": "GENERATE_REPORT",
+                        "data": report_response
+                    }
             
             # 默认情况：生成新选项
             choices_response = await get_choices(session_id, db, user, transaction=uow.transaction)

@@ -224,6 +224,9 @@ async def create_choices(db: AsyncSession, choices: Tuple[CreateChoice, CreateCh
             new_choices.append(new_choice)
             db.add(new_choice)
         
+        # flush to DB if in external transaction so update_choices can find new records
+        if transaction is not None:
+            await db.flush()
         # 只有在没有外部事务的情况下才提交
         if transaction is None:
             await db.commit()
