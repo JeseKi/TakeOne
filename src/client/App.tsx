@@ -14,6 +14,12 @@ function App() {
 
   useEffect(() => {
     const checkAuth = async () => {
+      if (window.location.pathname === '/' || window.location.pathname === '/login' || window.location.pathname === '/callback') {
+        setIsAuthenticated(true);
+        setIsChecking(false);
+        return;
+      }
+
       if (!accessToken) {
         setIsAuthenticated(false);
         setIsChecking(false);
