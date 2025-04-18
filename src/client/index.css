@@ -14,6 +14,15 @@ body {
     #f8f9fa;
   background-size: 280% 280%;
   animation: lightMove 5s infinite alternate ease-in-out;
+  overflow-x: clip;
+}
+
+body::-webkit-scrollbar {
+  width: 8px;
+}
+body::-webkit-scrollbar-thumb {
+  background-color: rgba(142, 202, 230);
+  border-radius: 4px;
 }
 
 @keyframes lightMove {

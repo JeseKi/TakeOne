@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Button, Card, Modal, Divider, Tag } from 'antd';
-import { InfoCircleOutlined, TrophyOutlined, StopOutlined, CheckCircleOutlined } from '@ant-design/icons';
+import { InfoCircleOutlined, CheckCircleOutlined, StopOutlined } from '@ant-design/icons';
 import styles from './ChatPage.module.css';
 
 import { ChoiceResponse, RoundResponse } from '../../Api';
@@ -190,7 +190,7 @@ const RoundCard: React.FC<RoundCardProps> = ({
                   appearance.is_winner_in_comparison === false ? 'bg-gray-100 border-gray-300 text-gray-500 opacity-80' :
                   'bg-white border-gray-300'}`}>
                 <div className="font-semibold text-base mb-1 flex items-center">
-                  {appearance.is_winner_in_comparison === true && <TrophyOutlined className="mr-2 text-green-500" />}
+                  {appearance.is_winner_in_comparison === true && <CheckCircleOutlined className="mr-2 text-green-500" />}
                   {appearance.is_winner_in_comparison === false && <StopOutlined className="mr-2 text-red-500" />}
                   {appearance.major_name}
                 </div>
@@ -213,7 +213,7 @@ const RoundCard: React.FC<RoundCardProps> = ({
             <div className="flex flex-wrap gap-2">
               {localAdvancedMajors.map((major, index) => (
                 <Tag key={index} color="success">
-                  <TrophyOutlined /> {major}
+                  <CheckCircleOutlined /> {major}
                 </Tag>
               ))}
             </div>
@@ -325,7 +325,7 @@ function ChoiceItem(props: {
       >
         <div className="p-2 flex flex-col items-center justify-center h-full">
           <h3 className="m-0 p-0 text-lg font-semibold mb-1">{choice.major_name}</h3>
-          {choice.is_winner_in_comparison === true && <TrophyOutlined className="text-green-500 text-xl" />}
+          {choice.is_winner_in_comparison === true && <CheckCircleOutlined className="text-green-500 text-xl" />}
           {choice.is_winner_in_comparison === false && <StopOutlined className="text-red-500 text-xl" />}
         </div>
       </Button>
