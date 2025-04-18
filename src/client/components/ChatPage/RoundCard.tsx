@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { Button, Card, Modal, Divider, Tag } from 'antd';
+import { Button, Card, Modal, Divider, Tag, Collapse } from 'antd';
 import { InfoCircleOutlined, CheckCircleOutlined, StopOutlined } from '@ant-design/icons';
 import styles from './ChatPage.module.css';
 
@@ -183,21 +183,25 @@ const RoundCard: React.FC<RoundCardProps> = ({
           </div>
         )}
         {(!isActive || !currentChoices || isSessionFinished) && roundMemo.appearances.length > 0 && (
-          <div className="flex flex-col gap-3 py-2">
-            {roundMemo.appearances.map((appearance, index) => (
-              <div key={index} className={`w-full p-3 rounded-lg border transition-all duration-300
-                ${appearance.is_winner_in_comparison === true ? 'bg-green-50 border-green-500' :
-                  appearance.is_winner_in_comparison === false ? 'bg-gray-100 border-gray-300 text-gray-500 opacity-80' :
-                  'bg-white border-gray-300'}`}>
-                <div className="font-semibold text-base mb-1 flex items-center">
-                  {appearance.is_winner_in_comparison === true && <CheckCircleOutlined className="mr-2 text-green-500" />}
-                  {appearance.is_winner_in_comparison === false && <StopOutlined className="mr-2 text-red-500" />}
-                  {appearance.major_name}
-                </div>
-                <p className="text-sm text-gray-600 m-0 leading-normal">{appearance.description || "暂无描述"}</p>
+          <Collapse defaultActiveKey={[]} ghost>
+            <Collapse.Panel header={`查看第 ${round.round_number} 轮结果（共 ${roundMemo.appearances.length} 项）`} key='results'>
+              <div className='flex flex-col gap-3 py-2'>
+                {roundMemo.appearances.map((appearance, index) => (
+                  <div key={index} className={`w-full p-3 rounded-lg border transition-all duration-300
+                    ${appearance.is_winner_in_comparison === true ? 'bg-green-50 border-green-500' :
+                      appearance.is_winner_in_comparison === false ? 'bg-gray-100 border-gray-300 text-gray-500 opacity-80' :
+                      'bg-white border-gray-300'}`}>
+                    <div className='font-semibold text-base mb-1 flex items-center'>
+                      {appearance.is_winner_in_comparison === true && <CheckCircleOutlined className='mr-2 text-green-500' />}
+                      {appearance.is_winner_in_comparison === false && <StopOutlined className='mr-2 text-red-500' />}
+                      {appearance.major_name}
+                    </div>
+                    <p className='text-sm text-gray-600 m-0 leading-normal'>{appearance.description || '暂无描述'}</p>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
+            </Collapse.Panel>
+          </Collapse>
         )}
       </Card>
       <Modal
