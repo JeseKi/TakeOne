@@ -11,11 +11,10 @@ function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isChecking, setIsChecking] = useState(true);
   const accessToken =localStorage.getItem('access_token') || '';
-
+  const isIntroDone = localStorage.getItem('isIntroDone') === 'true';
   useEffect(() => {
     const checkAuth = async () => {
       if (window.location.pathname === '/' || window.location.pathname === '/login' || window.location.pathname === '/callback') {
-        setIsAuthenticated(true);
         setIsChecking(false);
         return;
       }
@@ -49,7 +48,7 @@ function App() {
   return (
       <>
       <Routes>
-        <Route path="/" element={<Hero skipIntro={accessToken !== ''}/>} />
+        <Route path="/" element={<Hero skipIntro={isIntroDone}/>} />
         <Route path="/login" element={<Login />} />
         <Route path="/callback" element={<Callback />} />
         {isAuthenticated ? (

@@ -147,13 +147,18 @@ const Hero: React.FC<HeroProps> = ({ skipIntro }) => {
     }
   }, [lines]);
 
-  const handleClick = () => {
+  const handleClickNext = () => {
     if (isTyping || waitingChoice) return;
     displayNext();
   };
 
+  const handleClickStart = () => {
+    navigate('/chat');
+    localStorage.setItem('isIntroDone', 'true');
+  }
+
   return (
-    <div className="relative flex flex-col items-center justify-start min-h-screen bg-[#e9eef2] select-none" onClick={handleClick}>
+    <div className="relative flex flex-col items-center justify-start min-h-screen bg-[#e9eef2] select-none" onClick={handleClickNext}>
       {skipIntro && (
         <Button
           type="text"
@@ -200,7 +205,7 @@ const Hero: React.FC<HeroProps> = ({ skipIntro }) => {
           animate={{ scale: 1 }}
           transition={{ type: 'spring', stiffness: 300 }}
         >
-          <Button className={styles.skHeroButton} onClick={() => navigate('/chat')}>
+          <Button className={styles.skHeroButton} onClick={() => handleClickStart()}>
             开始选择自己的未来...
           </Button>
         </motion.div>
